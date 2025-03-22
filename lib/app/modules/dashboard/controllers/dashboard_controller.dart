@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:ujikom/app/modules/dashboard/views/index_view.dart';
-import 'package:ujikom/app/modules/profile/views/profile_view.dart';
+import 'package:ujikom/app/modules/dashboard/views/profile_view.dart';
 
 class DashboardController extends GetxController {
   var selectedIndex = 0.obs;
@@ -28,5 +29,10 @@ class DashboardController extends GetxController {
   @override
   void onClose() {
     super.onClose();
+  }
+
+  void logout() {
+    GetStorage().remove('token');
+    Get.offAllNamed('/login');
   }
 }

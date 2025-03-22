@@ -7,21 +7,23 @@ class ProfileController extends GetxController {
   final box = GetStorage();
   final _getConnect = GetConnect();
 
+  // Profile data as an observable
+  var profile =
+      Rx<ProfileResponse?>(null); // Add this line to hold the profile data
+
   Future<String?> getToken() async {
-    return await box.read('auth_token');
+    return await box.read('token');
   }
 
   Future<int?> getUserId() async {
     return await box.read('user_id');
   }
 
-  Future<ProfileResponse?> getProfile() async {
+  // Call this to fetch profile data
+  Future<void> fetchProfile() async {
     try {
       String? token = await getToken();
-      int? id = await getUserId(); // Ambil ID dari storage
-
-      print("Debug: Token -> $token");
-      print("Debug: User ID -> $id");
+      int? id = await getUserId();
 
       if (token == null) {
         throw Exception("Token tidak ditemukan, silakan login ulang.");
@@ -31,25 +33,20 @@ class ProfileController extends GetxController {
       }
 
       final response = await _getConnect.get(
-        "${BaseUrl.profile}/$id", // Gunakan ID dari storage
+        "${BaseUrl.base}/profile", // Ganti dengan endpoint profile yang sesuai
         headers: {'Authorization': "Bearer $token"},
         contentType: "application/json",
       );
 
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
-
       if (response.statusCode == 200) {
-        return ProfileResponse.fromJson(response.body);
-      } else if (response.statusCode == 401) {
-        logout();
-        throw Exception("Sesi berakhir, silakan login kembali.");
+        profile.value =
+            ProfileResponse.fromJson(response.body); // Save data to profile Rx
       } else {
         throw Exception("Gagal mengambil profil: ${response.statusText}");
       }
     } catch (e) {
       print("Error saat mengambil profil: $e");
-      return null;
+      profile.value = null; // Reset to null if error occurs
     }
   }
 

@@ -23,30 +23,6 @@ class ProfileResponse {
 }
 
 class Data {
-  String? accessToken;
-  String? tokenType;
-  User? user;
-
-  Data({this.accessToken, this.tokenType, this.user});
-
-  Data.fromJson(Map<String, dynamic> json) {
-    accessToken = json['access_token'];
-    tokenType = json['token_type'];
-    user = json['user'] != null ? new User.fromJson(json['user']) : null;
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['access_token'] = this.accessToken;
-    data['token_type'] = this.tokenType;
-    if (this.user != null) {
-      data['user'] = this.user!.toJson();
-    }
-    return data;
-  }
-}
-
-class User {
   int? id;
   String? name;
   String? email;
@@ -56,7 +32,7 @@ class User {
   String? dateOfBirth;
   String? profilePhoto;
 
-  User(
+  Data(
       {this.id,
       this.name,
       this.email,
@@ -66,7 +42,7 @@ class User {
       this.dateOfBirth,
       this.profilePhoto});
 
-  User.fromJson(Map<String, dynamic> json) {
+  Data.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     name = json['name'];
     email = json['email'];
