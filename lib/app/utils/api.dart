@@ -6,10 +6,10 @@ class BaseUrl {
   static String profile = '$base/profile';
   
   // Tambahkan endpoint untuk absensi
-  static String attendanceToday = '$base/attendance/today';
+  static String attendanceToday = '$base/get-attendance-today';
   static String attendanceByMonthAndYear = '$base/attendance'; // Tambah parameter nanti di request
   static String storeAttendance = '$base/attendance/store';
 
   // Endpoint untuk jadwal kerja
-  static String schedule = '$base/schedule';
+  static String schedule = '$base/get-schedule';
 }

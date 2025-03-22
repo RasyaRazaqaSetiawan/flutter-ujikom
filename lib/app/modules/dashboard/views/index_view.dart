@@ -21,15 +21,15 @@ class IndexView extends GetView<DashboardController> {
         backgroundColor: Colors.indigo[600],
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: Colors.white, // Set the icon color to white
-            ),
-            onPressed: () {
-              // Add notifications logic if needed
-            },
-          ),
+          // IconButton(
+          //   icon: const Icon(
+          //     Icons.notifications_outlined,
+          //     color: Colors.white, // Set the icon color to white
+          //   ),
+          //   onPressed: () {
+          //     // Add notifications logic if needed
+          //   },
+          // ),
           IconButton(
             icon: const Icon(
               Icons.logout_rounded,
@@ -101,15 +101,24 @@ class IndexView extends GetView<DashboardController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Nama Pengguna',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                // 🔹 Menampilkan Nama Karyawan langsung dari schedule (bukan controller.employeeName lagi)
+                Obx(() {
+                  final employeeName =
+                      controller.schedule.value?.data?.employeeName ??
+                          'Nama Tidak Tersedia';
+                  return Text(
+                    employeeName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }),
+
                 const SizedBox(height: 4),
+
+                // 🔹 Menampilkan Shift
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -117,22 +126,35 @@ class IndexView extends GetView<DashboardController> {
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Shift Pagi',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
+                  child: Obx(() {
+                    final shiftName =
+                        controller.schedule.value?.data?.shift?.name ??
+                            'Shift Tidak Tersedia';
+                    return Text(
+                      shiftName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    );
+                  }),
                 ),
+
                 const SizedBox(height: 4),
-                Text(
-                  'Kantor Pusat',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
-                  ),
-                ),
+
+                // 🔹 Menampilkan Kantor
+                Obx(() {
+                  final officeName =
+                      controller.schedule.value?.data?.office?.name ??
+                          'Kantor Tidak Tersedia';
+                  return Text(
+                    'Kantor: $officeName',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -171,21 +193,67 @@ class IndexView extends GetView<DashboardController> {
                   color: Colors.grey[800],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Min, 07 Jul 2024',
-                  style: TextStyle(
-                    color: Colors.green[700],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Min, 07 Jul 2024',
+                      style: TextStyle(
+                        color: Colors.green[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Obx(() {
+                    final isWfa = controller.schedule.value?.data?.isWfa;
+
+                    if (isWfa == 1) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green[600],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'WFA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      );
+                    } else if (isWfa == 0) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber[600],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'WFO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      );
+                    } else {
+                      return const SizedBox(); // Tidak tampil jika null
+                    }
+                  }),
+                ],
               ),
             ],
           ),
@@ -293,7 +361,8 @@ class IndexView extends GetView<DashboardController> {
                   'Hadir', '0', Icons.check_circle_outline, Colors.green),
               _buildStatisticCard(
                   'Terlambat', '0', Icons.access_time, Colors.orange),
-              _buildStatisticCard('Izin', '0', Icons.event_note, Colors.blue),
+              _buildStatisticCard(
+                  'Izin/Cuti', '0', Icons.event_note, Colors.blue),
               _buildStatisticCard(
                   'Sakit', '0', Icons.healing, Colors.red[400]!),
             ],

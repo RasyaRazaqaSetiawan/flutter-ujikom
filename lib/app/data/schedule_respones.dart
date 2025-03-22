@@ -26,14 +26,16 @@ class Data {
   String? employeeName;
   Office? office;
   Shift? shift;
+  int? isWfa;
 
-  Data({this.employeeName, this.office, this.shift});
+  Data({this.employeeName, this.office, this.shift, this.isWfa});
 
   Data.fromJson(Map<String, dynamic> json) {
     employeeName = json['employee_name'];
     office =
         json['office'] != null ? new Office.fromJson(json['office']) : null;
     shift = json['shift'] != null ? new Shift.fromJson(json['shift']) : null;
+    isWfa = json['is_wfa'];
   }
 
   Map<String, dynamic> toJson() {
@@ -45,6 +47,7 @@ class Data {
     if (this.shift != null) {
       data['shift'] = this.shift!.toJson();
     }
+    data['is_wfa'] = this.isWfa;
     return data;
   }
 }

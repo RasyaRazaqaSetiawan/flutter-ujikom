@@ -27,15 +27,15 @@ class ProfileView extends GetView<ProfileController> {
         backgroundColor: Colors.indigo[600],
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              // Add notifications logic if needed
-            },
-          ),
+          // IconButton(
+          //   icon: const Icon(
+          //     Icons.notifications_outlined,
+          //     color: Colors.white,
+          //   ),
+          //   onPressed: () {
+          //     // Add notifications logic if needed
+          //   },
+          // ),
           IconButton(
             icon: const Icon(
               Icons.logout_rounded,
