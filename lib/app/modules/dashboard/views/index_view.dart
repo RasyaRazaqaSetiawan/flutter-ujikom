@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:ujikom/app/modules/dashboard/controllers/dashboard_controller.dart';
+import 'package:ujikom/app/modules/dashboard/views/attendances_view.dart';
 
 class IndexView extends GetView<DashboardController> {
   const IndexView({super.key});
@@ -10,14 +12,18 @@ class IndexView extends GetView<DashboardController> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          'Selamat Datang',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
+        title: Obx(() {
+          final name =
+              controller.schedule.value?.data?.employeeName ?? 'Pengguna';
+          return Text(
+            'Selamat Datang, $name',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
+          );
+        }),
         backgroundColor: Colors.indigo[600],
         elevation: 0,
         actions: [
@@ -101,7 +107,7 @@ class IndexView extends GetView<DashboardController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔹 Menampilkan Nama Karyawan langsung dari schedule (bukan controller.employeeName lagi)
+                // 🔹 Menampilkan Nama Karyawan
                 Obx(() {
                   final employeeName =
                       controller.schedule.value?.data?.employeeName ??
@@ -118,7 +124,7 @@ class IndexView extends GetView<DashboardController> {
 
                 const SizedBox(height: 4),
 
-                // 🔹 Menampilkan Shift
+                // 🔹 Menampilkan Shift dengan Detail Waktu (Shift: 09:00 - 16:00)
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -130,8 +136,14 @@ class IndexView extends GetView<DashboardController> {
                     final shiftName =
                         controller.schedule.value?.data?.shift?.name ??
                             'Shift Tidak Tersedia';
+                    final startTime =
+                        controller.schedule.value?.data?.shift?.startTime ??
+                            '00:00';
+                    final endTime =
+                        controller.schedule.value?.data?.shift?.endTime ??
+                            '00:00';
                     return Text(
-                      shiftName,
+                      '$shiftName (${DateFormat('HH:mm').format(DateTime.parse('2022-01-01 $startTime'))} - ${DateFormat('HH:mm').format(DateTime.parse('2022-01-01 $endTime'))})',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -164,6 +176,7 @@ class IndexView extends GetView<DashboardController> {
   }
 
   Widget _buildAttendanceCard() {
+    String currentDate = DateFormat('EEE, dd MMM yyyy', 'id_ID').format(DateTime.now());
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -203,7 +216,8 @@ class IndexView extends GetView<DashboardController> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Min, 07 Jul 2024',
+                      // 'Min, 07 Jul 2024',
+                      currentDate,
                       style: TextStyle(
                         color: Colors.green[700],
                         fontSize: 12,
@@ -275,7 +289,7 @@ class IndexView extends GetView<DashboardController> {
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () {
-              // Add attendance logic here
+              Get.to(() => const AttendancesView());
             },
             icon: const Icon(Icons.fingerprint),
             label: const Text('Buat Kehadiran'),
