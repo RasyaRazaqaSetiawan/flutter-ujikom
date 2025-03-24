@@ -5,11 +5,15 @@ class BaseUrl {
   static String logout = '$base/logout';
   static String profile = '$base/profile';
   
-  // Tambahkan endpoint untuk absensi
+  // endpoint untuk absensi
   static String attendanceToday = '$base/get-attendance-today';
-  static String attendanceByMonthAndYear = '$base/attendance'; // Tambah parameter nanti di request
+  static String attendanceByMonthAndYear = '$base/attendance';
   static String storeAttendance = '$base/attendance/store';
 
   // Endpoint untuk jadwal kerja
   static String schedule = '$base/get-schedule';
+
+  // Endpoint untuk pengajuan cuti
+  static String leave = '$base/get-leave';
+  static String storeLeave = '$base/leave';
 }

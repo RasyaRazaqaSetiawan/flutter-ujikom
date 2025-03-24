@@ -6,6 +6,8 @@ import '../modules/dashboard/bindings/dashboard_binding.dart';
 import '../modules/dashboard/views/dashboard_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
+import '../modules/leave/bindings/leave_binding.dart';
+import '../modules/leave/views/leave_view.dart';
 import '../modules/login/bindings/login_binding.dart';
 import '../modules/login/views/login_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
@@ -43,6 +45,11 @@ class AppPages {
       name: _Paths.ATTENDANCES,
       page: () => const AttendancesView(),
       binding: AttendancesBinding(),
+    ),
+    GetPage(
+      name: _Paths.LEAVE,
+      page: () => const LeaveView(),
+      binding: LeaveBinding(),
     ),
   ];
 }

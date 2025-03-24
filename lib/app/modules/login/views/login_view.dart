@@ -72,7 +72,7 @@ class LoginView extends GetView<LoginController> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Selamat Datang',
+          'Selamat Datang di AbsensiGo',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -93,6 +93,7 @@ class LoginView extends GetView<LoginController> {
 
   Widget _buildLoginForm(LoginController controller) {
     return Form(
+      key: controller.loginFormKey,
       child: Column(
         children: [
           // Email Field
@@ -183,8 +184,8 @@ class LoginView extends GetView<LoginController> {
                     if (value == null || value.isEmpty) {
                       return 'Password tidak boleh kosong';
                     }
-                    if (value.length < 6) {
-                      return 'Password harus lebih dari 6 karakter';
+                    if (value.length < 8) {
+                      return 'Password harus lebih dari 8 karakter';
                     }
                     return null;
                   },
@@ -217,7 +218,10 @@ class LoginView extends GetView<LoginController> {
       ),
       child: ElevatedButton(
         onPressed: () {
-          controller.loginNow();
+          // ✅ Validasi form sebelum login
+          if (controller.loginFormKey.currentState!.validate()) {
+            controller.loginNow();
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,

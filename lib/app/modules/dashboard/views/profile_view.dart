@@ -14,16 +14,19 @@ class ProfileView extends GetView<ProfileController> {
     controller.fetchProfile();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text(
-          'Selamat Datang',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
+        title: Obx(() {
+          final name = controller.profile.value?.data?.name ?? 'Pengguna';
+          return Text(
+            'Selamat Datang, $name',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
+          );
+        }),
         backgroundColor: Colors.indigo[600],
         elevation: 0,
         actions: [

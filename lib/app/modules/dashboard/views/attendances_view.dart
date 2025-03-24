@@ -13,24 +13,25 @@ class AttendancesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Coordinates for Bandung, Indonesia
-    final LatLng bandungCoords = LatLng(-6.9175, 107.6191); // Correct coordinates for Bandung
+    final LatLng bandungCoords =
+        LatLng(-6.9175, 107.6191); // Correct coordinates for Bandung
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF4051B5),
         title: Text(
           'Buat Kehadiran',
           style: GoogleFonts.poppins(
-            color: Colors.black87,
+            color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Get.back(),
         ),
       ),
@@ -44,7 +45,8 @@ class AttendancesView extends StatelessWidget {
               ),
               child: FlutterMap(
                 options: MapOptions(
-                  initialCenter: bandungCoords,  // Updated coordinates for Bandung
+                  initialCenter:
+                      bandungCoords, // Updated coordinates for Bandung
                   initialZoom: 15.0,
                   maxZoom: 18.0,
                   minZoom: 10.0,
@@ -54,7 +56,8 @@ class AttendancesView extends StatelessWidget {
                     urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.example.app',
-                    tileProvider: CancellableNetworkTileProvider(), // Added tile provider for improved performance
+                    tileProvider:
+                        CancellableNetworkTileProvider(), // Added tile provider for improved performance
                   ),
                   MarkerLayer(
                     markers: [
@@ -104,7 +107,7 @@ class AttendancesView extends StatelessWidget {
                   _buildInfoRow(
                     icon: Icons.business,
                     title: 'Kantor',
-                    subtitle: 'WFA',
+                    subtitle: 'Nama Kantor',
                     tagColor: Colors.orange,
                   ),
                   const Divider(height: 24),

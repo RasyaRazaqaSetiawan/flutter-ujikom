@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:ujikom/app/modules/dashboard/controllers/dashboard_controller.dart';
 import 'package:ujikom/app/modules/dashboard/views/attendances_view.dart';
+import 'package:ujikom/app/modules/dashboard/views/leave_view.dart';
 
 class IndexView extends GetView<DashboardController> {
   const IndexView({super.key});
@@ -10,7 +11,7 @@ class IndexView extends GetView<DashboardController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Obx(() {
           final name =
@@ -56,7 +57,12 @@ class IndexView extends GetView<DashboardController> {
             const SizedBox(height: 16),
             _buildAttendanceCard(),
             const SizedBox(height: 20),
+            _buildLeaveRequestCard(),
+            const SizedBox(height: 20),
             _buildStatisticsSection(),
+            const SizedBox(height: 20),
+            _buildLeaveHistorySection(),
+            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -176,7 +182,8 @@ class IndexView extends GetView<DashboardController> {
   }
 
   Widget _buildAttendanceCard() {
-    String currentDate = DateFormat('EEE, dd MMM yyyy', 'id_ID').format(DateTime.now());
+    String currentDate =
+        DateFormat('EEE, dd MMM yyyy', 'id_ID').format(DateTime.now());
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -305,6 +312,257 @@ class IndexView extends GetView<DashboardController> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLeaveRequestCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Pengajuan Cuti',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              // Container(
+              //   padding:
+              //       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              //   decoration: BoxDecoration(
+              //     color: Colors.purple[50],
+              //     borderRadius: BorderRadius.circular(12),
+              //   ),
+              //   child: Row(
+              //     children: [
+              //       Icon(
+              //         Icons.calendar_today_rounded,
+              //         size: 12,
+              //         color: Colors.purple[700],
+              //       ),
+              //       const SizedBox(width: 4),
+              //       Text(
+              //         'Sisa Cuti: 12',
+              //         style: TextStyle(
+              //           color: Colors.purple[700],
+              //           fontSize: 12,
+              //           fontWeight: FontWeight.w500,
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Informasi kapan cuti terakhir
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.indigo[50],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.indigo[400],
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Cuti terakhir Anda 28 hari yang lalu pada 10 Jun 2024',
+                    style: TextStyle(
+                      color: Colors.indigo[700],
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () {
+              // _showLeaveRequestDialog();
+              Get.to(() => const LeaveView());
+            },
+            icon: const Icon(Icons.event_available_rounded),
+            label: const Text('Ajukan Cuti'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple[600],
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeaveHistorySection() {
+    // Data cuti dummy
+    final leaveHistory = [
+      {
+        'type': 'Cuti Liburan',
+        'start_date': '05 Jun 2024',
+        'end_date': '07 Jun 2024',
+        'days': 3,
+        'status': 'Pending',
+        'status_color': Colors.amber,
+      },
+      {
+        'type': 'Cuti Sakit',
+        'start_date': '15 Mei 2024',
+        'end_date': '16 Mei 2024',
+        'days': 2,
+        'status': 'Disetujui',
+        'status_color': Colors.green,
+      },
+      {
+        'type': 'Cuti Acara Keluarga',
+        'start_date': '03 Apr 2024',
+        'end_date': '03 Apr 2024',
+        'days': 1,
+        'status': 'Ditolak',
+        'status_color': Colors.red,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Riwayat Cuti',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  // Navigasi ke halaman riwayat cuti lengkap
+                },
+                child: Text(
+                  'Lihat Semua',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.indigo[600],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: ListView.separated(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: leaveHistory.length,
+              separatorBuilder: (context, index) => Divider(
+                height: 1,
+                color: Colors.grey[200],
+              ),
+              itemBuilder: (context, index) {
+                final leave = leaveHistory[index];
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  title: Text(
+                    leave['type'] as String,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        '${leave['start_date']} - ${leave['end_date']} (${leave['days']} hari)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (leave['status_color'] as Color).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      leave['status'] as String,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: leave['status_color'] as Color,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -509,6 +767,72 @@ class IndexView extends GetView<DashboardController> {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessDialog() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green[600],
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Pengajuan Cuti Berhasil',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Pengajuan cuti Anda telah berhasil diajukan dan sedang menunggu persetujuan.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Get.back(); // Close dialog
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Kembali ke Beranda'),
+                ),
               ),
             ],
           ),
