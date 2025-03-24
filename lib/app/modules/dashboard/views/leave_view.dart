@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ujikom/app/modules/dashboard/views/dashboard_view.dart';
 
 class LeaveView extends GetView {
   const LeaveView({super.key});
@@ -258,7 +259,9 @@ class LeaveView extends GetView {
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        _showSuccessDialog();
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF9C27B0),
                         foregroundColor: Colors.white,
@@ -315,6 +318,72 @@ class LeaveView extends GetView {
               color: Colors.grey,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessDialog() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green[600],
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Pengajuan Cuti Berhasil',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Pengajuan cuti Anda telah berhasil diajukan dan sedang menunggu persetujuan.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Get.to(()=> const DashboardView()); // Close dialog
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Kembali ke Beranda'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
