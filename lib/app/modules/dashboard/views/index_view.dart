@@ -378,33 +378,36 @@ class IndexView extends GetView<DashboardController> {
           const SizedBox(height: 16),
 
           // Informasi kapan cuti terakhir
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.indigo[50],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  color: Colors.indigo[400],
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Cuti terakhir Anda 28 hari yang lalu pada 10 Jun 2024',
-                    style: TextStyle(
-                      color: Colors.indigo[700],
-                      fontSize: 13,
+          Obx(() {
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.indigo[50],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: Colors.indigo[400],
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      controller.lastLeaveDate.value.isNotEmpty
+                          ? 'Cuti terakhir Anda pada ${controller.lastLeaveDate.value}'
+                          : 'Belum ada cuti yang disetujui',
+                      style: TextStyle(
+                        color: Colors.indigo[700],
+                        fontSize: 13,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
+                ],
+              ),
+            );
+          }),
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () {
@@ -436,6 +439,68 @@ class IndexView extends GetView<DashboardController> {
       }
 
       final leaveHistory = controller.get_leave.value?.data ?? [];
+
+      // Cek jika data cuti kosong
+      if (leaveHistory.isEmpty) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Riwayat Cuti',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.event_busy,
+                      size: 40,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Tidak ada data cuti',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }
 
       // Batasi hanya 3 data yang ditampilkan
       final limitedLeaveHistory = leaveHistory.take(3).toList();

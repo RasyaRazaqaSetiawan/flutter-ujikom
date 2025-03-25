@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:intl/intl.dart';
 import 'package:ujikom/app/data/get_leave_response.dart';
 import 'package:ujikom/app/data/schedule_respones.dart';
 import 'package:ujikom/app/modules/dashboard/views/index_view.dart';
@@ -14,6 +15,7 @@ class DashboardController extends GetxController {
   var approvedLeaveCount = 0.obs; // Menyimpan jumlah cuti yang disetujui
   var schedule = Rxn<ScheduleResponse>(); // Menyimpan data jadwal
   var get_leave = Rxn<get_leave_respones>(); // Menyimpan data pengajuan cuti
+  var lastLeaveDate = ''.obs; // Menyimpan tanggal cuti terakhir
 
   // Storage untuk mengambil token
   final box = GetStorage();
@@ -46,6 +48,31 @@ class DashboardController extends GetxController {
       }
     } catch (e) {
       print("Error saat mengambil data jadwal: $e");
+    }
+  }
+
+// Fungsi untuk mengatur tanggal cuti terakhir
+  void _setLastLeaveDate() {
+    if (get_leave.value != null && get_leave.value!.data != null) {
+      // Ambil data cuti yang disetujui
+      var approvedLeaves = get_leave.value!.data!
+          .where((leave) => leave.status == 'approved')
+          .toList();
+
+      if (approvedLeaves.isNotEmpty) {
+        // Urutkan berdasarkan startDate
+        approvedLeaves.sort((a, b) => b.startDate!.compareTo(a.startDate!));
+        var lastLeave = approvedLeaves.first;
+
+        // Format tanggal mulai dan akhir
+        final start =
+            DateFormat('d MMM y').format(DateTime.parse(lastLeave.startDate!));
+        final end =
+            DateFormat('d MMM y').format(DateTime.parse(lastLeave.endDate!));
+
+        // Gabungkan keduanya jadi satu string
+        lastLeaveDate.value = '$start - $end';
+      }
     }
   }
 
@@ -109,6 +136,7 @@ class DashboardController extends GetxController {
 
       if (response.statusCode == 200) {
         get_leave.value = get_leave_respones.fromJson(response.body);
+        _setLastLeaveDate(); // Ensure this function is called after data is loaded
       } else {
         throw Exception("Gagal mengambil data cuti: ${response.statusText}");
       }
