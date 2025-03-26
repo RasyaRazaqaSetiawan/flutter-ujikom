@@ -5,11 +5,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:ujikom/app/data/get_leave_response.dart';
 import 'package:ujikom/app/data/store_leave_response.dart';
 import 'package:ujikom/app/utils/api.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LeaveController extends GetxController {
+  var get_leave = Rxn<get_leave_respones>(); // Menyimpan data pengajuan cuti
+  var lastLeaveDate = ''.obs; // Menyimpan tanggal cuti terakhir
   var leaveResponse = Rxn<StoreLeaveResponse>();
   var scheduleOffice = Rx<String>('');
   var selectedCategory = 'Pilih Kategori'.obs;
@@ -50,6 +53,55 @@ class LeaveController extends GetxController {
         return 'Sakit';
       default:
         return category;
+    }
+  }
+
+  // Fungsi untuk mengambil data pengajuan cuti (leave)
+  Future<void> fetchLeave() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw Exception("Token tidak ditemukan, silakan login kembali.");
+      }
+
+      final response = await _getConnect.get(
+        BaseUrl.leave, // Pastikan endpoint yang benar
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        get_leave.value = get_leave_respones.fromJson(response.body);
+        _setLastLeaveDate(); // Ensure this function is called after data is loaded
+      } else {
+        throw Exception("Gagal mengambil data cuti: ${response.statusText}");
+      }
+    } catch (e) {
+      print("Error saat mengambil data cuti: $e");
+    }
+  }
+
+  // Fungsi untuk mengatur tanggal cuti terakhir
+  void _setLastLeaveDate() {
+    if (get_leave.value != null && get_leave.value!.data != null) {
+      // Ambil data cuti yang disetujui
+      var approvedLeaves = get_leave.value!.data!
+          .where((leave) => leave.status == 'approved')
+          .toList();
+
+      if (approvedLeaves.isNotEmpty) {
+        // Urutkan berdasarkan startDate
+        approvedLeaves.sort((a, b) => b.startDate!.compareTo(a.startDate!));
+        var lastLeave = approvedLeaves.first;
+
+        // Format tanggal mulai dan akhir
+        final start =
+            DateFormat('d MMM y').format(DateTime.parse(lastLeave.startDate!));
+        final end =
+            DateFormat('d MMM y').format(DateTime.parse(lastLeave.endDate!));
+
+        // Gabungkan keduanya jadi satu string
+        lastLeaveDate.value = '$start - $end';
+      }
     }
   }
 
@@ -121,11 +173,12 @@ class LeaveController extends GetxController {
   // Updated image picker function to handle both web and mobile
   Future<void> pickImage() async {
     final ImagePicker picker = ImagePicker();
-    
+
     if (kIsWeb) {
       // Web approach
       try {
-        final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+        final XFile? image =
+            await picker.pickImage(source: ImageSource.gallery);
         if (image != null) {
           // Read image as bytes
           final bytes = await image.readAsBytes();
@@ -140,7 +193,8 @@ class LeaveController extends GetxController {
     } else {
       // Mobile approach
       try {
-        final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+        final XFile? image =
+            await picker.pickImage(source: ImageSource.gallery);
         if (image != null) {
           selectedImage.value = image.path;
         }
@@ -189,7 +243,8 @@ class LeaveController extends GetxController {
       // Format dates
       DateTime parsedStartDate = DateFormat('d MMM y').parse(startDate);
       DateTime parsedEndDate = DateFormat('d MMM y').parse(endDate);
-      String formattedStartDate = DateFormat('yyyy-MM-dd').format(parsedStartDate);
+      String formattedStartDate =
+          DateFormat('yyyy-MM-dd').format(parsedStartDate);
       String formattedEndDate = DateFormat('yyyy-MM-dd').format(parsedEndDate);
 
       // Different approach based on platform
@@ -231,19 +286,19 @@ class LeaveController extends GetxController {
     required String scheduleOffice,
   }) async {
     var uri = Uri.parse(BaseUrl.storeLeave);
-    
+
     // For web, we'll manually build the multipart request
     var request = http.MultipartRequest('POST', uri);
-    
+
     request.headers['Authorization'] = 'Bearer $token';
     request.headers['Accept'] = 'application/json';
-    
+
     request.fields['categories_leave'] = categoriesLeave;
     request.fields['start_date'] = formattedStartDate;
     request.fields['end_date'] = formattedEndDate;
     request.fields['reason'] = reason;
     request.fields['schedule_office'] = scheduleOffice;
-    
+
     // Add image if available
     if (webImage.value != null) {
       final multipartFile = http.MultipartFile.fromBytes(
@@ -254,7 +309,7 @@ class LeaveController extends GetxController {
       );
       request.files.add(multipartFile);
     }
-    
+
     // Send the request
     var streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);
@@ -278,16 +333,16 @@ class LeaveController extends GetxController {
   }) async {
     var uri = Uri.parse(BaseUrl.storeLeave);
     var request = http.MultipartRequest('POST', uri);
-    
+
     request.headers['Authorization'] = 'Bearer $token';
     request.headers['Accept'] = 'application/json';
-    
+
     request.fields['categories_leave'] = categoriesLeave;
     request.fields['start_date'] = formattedStartDate;
     request.fields['end_date'] = formattedEndDate;
     request.fields['reason'] = reason;
     request.fields['schedule_office'] = scheduleOffice;
-    
+
     // Add image if available
     if (selectedImage.value.isNotEmpty) {
       var file = await http.MultipartFile.fromPath(
@@ -295,8 +350,9 @@ class LeaveController extends GetxController {
         selectedImage.value,
         contentType: MediaType('image', 'jpeg'),
       );
-      request.files.add(file);    }
-    
+      request.files.add(file);
+    }
+
     // Send the request
     var streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);

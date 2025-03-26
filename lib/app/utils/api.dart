@@ -17,4 +17,5 @@ class BaseUrl {
   static String leave = '$base/get-leave';
   static String storeLeave = '$base/leave';
   static String approvedLeaveCount = '$base/approved-leave-count';
+  static String approvedSickCount = '$base/approved-sick-count';
 }

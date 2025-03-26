@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:ujikom/app/modules/dashboard/controllers/dashboard_controller.dart';
 import 'package:ujikom/app/modules/dashboard/views/attendances_view.dart';
+import 'package:ujikom/app/modules/dashboard/views/leave_detail_view.dart';
 import 'package:ujikom/app/modules/dashboard/views/leave_view.dart';
 
 class IndexView extends GetView<DashboardController> {
@@ -523,7 +524,7 @@ class IndexView extends GetView<DashboardController> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigasi ke halaman riwayat cuti lengkap
+                    Get.to(() => const LeaveDetailView());
                   },
                   child: Text(
                     'Lihat Semua',
@@ -564,6 +565,8 @@ class IndexView extends GetView<DashboardController> {
                 ),
                 itemBuilder: (context, index) {
                   final leave = limitedLeaveHistory[index];
+                  final category =
+                      leave.categoriesLeave ?? 'Cuti Tidak Diketahui';
 
                   // Menentukan warna status berdasarkan status cuti
                   Color statusColor;
@@ -585,14 +588,22 @@ class IndexView extends GetView<DashboardController> {
                       break;
                   }
 
+                  // Mengambil ikon kategori dari controller
+                  final IconData categoryIcon =
+                      controller.categoryIcons[category] ?? Icons.event_note;
+
                   return ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
                     ),
+                    leading: Icon(
+                      categoryIcon,
+                      color: Color(0xFF4051B5),
+                      size: 24,
+                    ),
                     title: Text(
-                      controller.formatCategory(
-                          leave.categoriesLeave ?? 'Cuti Tidak Diketahui'),
+                      controller.formatCategory(category),
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -713,8 +724,13 @@ class IndexView extends GetView<DashboardController> {
                     Icons.event_note,
                     Colors.blue);
               }),
-              _buildStatisticCard(
-                  'Sakit', '0', Icons.healing, Colors.red[400]!),
+              Obx(() {
+                return _buildStatisticCard(
+                    'Sakit',
+                    '${controller.approvedSickCount.value}',
+                    Icons.healing,
+                    Colors.red[400]!);
+              }),
             ],
           ),
         ),
