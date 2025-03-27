@@ -226,7 +226,6 @@ class IndexView extends GetView<DashboardController> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      // 'Min, 07 Jul 2024',
                       currentDate,
                       style: TextStyle(
                         color: Colors.green[700],
@@ -285,34 +284,69 @@ class IndexView extends GetView<DashboardController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildTimeInfo(
-                  'Datang', '06:03', Icons.login_rounded, Colors.blue),
+              Obx(() {
+                final startTime =
+                    controller.get_attendance.value?.data?.hariIni?.startTime;
+                final startTimeText = startTime != null && startTime.isNotEmpty
+                    ? startTime
+                    : '--:--';
+
+                return _buildTimeInfo(
+                    'Datang', startTimeText, Icons.login_rounded, Colors.blue);
+              }),
               Container(
                 height: 40,
                 width: 1,
                 color: Colors.grey[200],
               ),
-              _buildTimeInfo(
-                  'Pulang', '14:56', Icons.logout_rounded, Colors.orange),
+              Obx(() {
+                final endTime =
+                    controller.get_attendance.value?.data?.hariIni?.endTime;
+                final endTimeText =
+                    endTime != null && endTime.isNotEmpty ? endTime : '--:--';
+
+                return _buildTimeInfo(
+                    'Pulang', endTimeText, Icons.logout_rounded, Colors.orange);
+              }),
             ],
           ),
           const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: () {
-              Get.to(() => const AttendancesView());
-            },
-            icon: const Icon(Icons.fingerprint),
-            label: const Text('Buat Kehadiran'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo[600],
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          Obx(() {
+            final hasStartTime =
+                controller.get_attendance.value?.data?.hariIni?.startTime !=
+                        null &&
+                    controller.get_attendance.value!.data!.hariIni!.startTime!
+                        .isNotEmpty;
+            final hasEndTime =
+                controller.get_attendance.value?.data?.hariIni?.endTime !=
+                        null &&
+                    controller.get_attendance.value!.data!.hariIni!.endTime!
+                        .isNotEmpty;
+
+            return ElevatedButton.icon(
+              onPressed: () {
+                // Untuk semua kasus, navigasi ke AttendancesView
+                Get.to(() => const AttendancesView());
+              },
+              icon: hasEndTime
+                  ? const Icon(Icons.check_circle_outline)
+                  : Icon(hasStartTime ? Icons.logout : Icons.fingerprint),
+              label: Text(hasEndTime
+                  ? 'Kehadiran Selesai'
+                  : (hasStartTime ? 'Pulang' : 'Buat Kehadiran')),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: hasEndTime
+                    ? Colors.green[600]
+                    : (hasStartTime ? Colors.orange[600] : Colors.indigo[600]),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
               ),
-              elevation: 0,
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );
@@ -790,6 +824,33 @@ class IndexView extends GetView<DashboardController> {
           ),
         ],
       ),
+    );
+  }
+
+  // Fungsi untuk menampilkan dialog info ketika absensi sudah selesai
+  void showAttendanceCompletedInfo() {
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue[600]),
+            SizedBox(width: 10),
+            Text('Informasi Kehadiran'),
+          ],
+        ),
+        content: Text(
+          'Absensi hari ini sudah selesai. Anda dapat melakukan absensi kembali pada hari kerja berikutnya.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('Mengerti', style: TextStyle(color: Colors.blue[700])),
+          ),
+        ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      ),
+      barrierDismissible: true,
     );
   }
 

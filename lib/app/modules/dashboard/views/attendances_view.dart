@@ -14,7 +14,7 @@ class AttendancesView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Coordinates for Bandung, Indonesia
     final LatLng bandungCoords =
-        LatLng(-6.9175, 107.6191); // Correct coordinates for Bandung
+        LatLng(-6.967105, 107.592861); // Correct coordinates for Bandung
 
     return Scaffold(
       backgroundColor: Colors.grey[100],

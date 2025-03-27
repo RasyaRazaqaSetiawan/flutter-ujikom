@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:ujikom/app/data/get_attendance_response.dart';
 import 'package:ujikom/app/data/get_leave_response.dart';
 import 'package:ujikom/app/data/schedule_respones.dart';
 import 'package:ujikom/app/modules/dashboard/views/index_view.dart';
@@ -15,20 +16,21 @@ class DashboardController extends GetxController {
   final approvedSickCount = 0.obs;
   final schedule = Rxn<ScheduleResponse>();
   final get_leave = Rxn<get_leave_respones>();
+  final get_attendance = Rxn<GetAttendanceResponse>();
   final lastLeaveDate = ''.obs;
-  
+
   // Storage for token
   final box = GetStorage();
-  
+
   // API Connection
   final _getConnect = GetConnect();
-  
+
   // Pages used in bottom navigation
   final List<Widget> pages = [
     IndexView(),
     ProfileView(),
   ];
-  
+
   // Category to icon mapping
   final Map<String, IconData> categoryIcons = {
     'acara_keluarga': Icons.family_restroom,
@@ -41,6 +43,7 @@ class DashboardController extends GetxController {
   void onInit() {
     super.onInit();
     fetchSchedule();
+    fetchAttendance();
     fetchLeave();
     fetchApprovedLeaveCount();
     fetchApprovedSickCount();
@@ -127,6 +130,86 @@ class DashboardController extends GetxController {
     }
   }
 
+  // Fetch attendance data from API
+  Future<void> fetchAttendance() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw Exception("Token tidak ditemukan, silakan login kembali.");
+      }
+
+      final response = await _getConnect.get(
+        BaseUrl.attendanceToday,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        get_attendance.value = GetAttendanceResponse.fromJson(response.body);
+      } else {
+        throw Exception("Gagal mengambil jadwal: ${response.statusText}");
+      }
+    } catch (e) {
+      print("Error saat mengambil data jadwal: $e");
+    }
+  }
+
+  // Metode untuk melakukan absensi (masuk atau pulang)
+  Future<void> storeAttendance(String type) async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw Exception("Token tidak ditemukan, silakan login kembali.");
+      }
+
+      final response = await _getConnect.post(
+        BaseUrl.storeAttendance,
+        {
+          'type': type, // 'in' untuk absen masuk, 'out' untuk absen pulang
+        },
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        await fetchAttendance(); // Refresh data kehadiran
+        final message = type == 'in'
+            ? 'Absen masuk berhasil dicatat'
+            : 'Absen pulang berhasil dicatat';
+        Get.snackbar(
+          'Berhasil',
+          message,
+          backgroundColor: Colors.green[600],
+          colorText: Colors.white,
+          duration: Duration(seconds: 2),
+        );
+      } else {
+        final errorMessage =
+            type == 'in' ? 'Gagal absen masuk' : 'Gagal absen pulang';
+        throw Exception("$errorMessage: ${response.statusText}");
+      }
+    } catch (e) {
+      final errorTitle =
+          type == 'in' ? 'Gagal Absen Masuk' : 'Gagal Absen Pulang';
+      Get.snackbar(
+        errorTitle,
+        'Error: $e',
+        backgroundColor: Colors.red[600],
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
+      print("Error saat absen ${type == 'in' ? 'masuk' : 'pulang'}: $e");
+    }
+  }
+
+// Helper method untuk absen masuk
+  Future<void> clockIn() async {
+    await storeAttendance('in');
+  }
+
+// Helper method untuk absen pulang
+  Future<void> clockOut() async {
+    await storeAttendance('out');
+  }
+
   // Fetch leave data from API
   Future<void> fetchLeave() async {
     try {
@@ -201,7 +284,7 @@ class DashboardController extends GetxController {
 
   // Helper methods
   //----------------------------------------
-  
+
   // Set the last leave date
   void _setLastLeaveDate() {
     if (get_leave.value != null && get_leave.value!.data != null) {
@@ -216,8 +299,10 @@ class DashboardController extends GetxController {
         var lastLeave = approvedLeaves.first;
 
         // Format start and end dates
-        final start = DateFormat('d MMM y').format(DateTime.parse(lastLeave.startDate!));
-        final end = DateFormat('d MMM y').format(DateTime.parse(lastLeave.endDate!));
+        final start =
+            DateFormat('d MMM y').format(DateTime.parse(lastLeave.startDate!));
+        final end =
+            DateFormat('d MMM y').format(DateTime.parse(lastLeave.endDate!));
 
         // Combine into one string
         lastLeaveDate.value = '$start - $end';

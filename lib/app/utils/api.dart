@@ -7,7 +7,7 @@ class BaseUrl {
   
   // endpoint untuk absensi
   static String attendanceToday = '$base/get-attendance-today';
-  static String attendanceByMonthAndYear = '$base/attendance';
+  static String attendanceHistory = '$base/get-attendance-history';
   static String storeAttendance = '$base/attendance/store';
 
   // Endpoint untuk jadwal kerja
