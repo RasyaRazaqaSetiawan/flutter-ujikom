@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:zoom_tap_animation/zoom_tap_animation.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:ujikom/app/modules/attendances/controllers/attendances_controller.dart';
+import 'dart:math' show cos, pi, pow;
 
 class AttendancesView extends GetView<AttendancesController> {
   const AttendancesView({super.key});
@@ -15,9 +16,29 @@ class AttendancesView extends GetView<AttendancesController> {
   Widget build(BuildContext context) {
     // Ensure controller is registered in GetX dependency management
     final controller = Get.put(AttendancesController());
-    
-    // Coordinates for Bandung, Indonesia
-    final LatLng bandungCoords = LatLng(-6.967105, 107.592861);
+
+    // Create a map controller to track zoom changes
+    final mapController = MapController();
+
+    // Fixed radius in meters for the circle
+    const double radiusInMeters = 100.0;
+
+    // Coordinates for Bandung, Indonesia (marker location - user location)
+    // final LatLng userCoords = LatLng(-6.995927, 107.593684);
+    final LatLng userCoords = LatLng(-6.967105, 107.592861);
+
+    // Different coordinates for the circle (Gedung Sate, Bandung - office location)
+    final LatLng officeCoords = LatLng(-6.967105, 107.592861);
+
+    // Create Rx variables
+    final RxDouble currentZoom = 15.0.obs;
+    final RxBool showOfficeLocation =
+        true.obs; // Controls which location to focus on
+
+    // Function to move map to a location
+    void moveToLocation(LatLng location, double zoom) {
+      mapController.move(location, zoom);
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -59,7 +80,7 @@ class AttendancesView extends GetView<AttendancesController> {
 
         // Check if WFA (Work From Anywhere) is enabled
         final bool isWfa = scheduleData.isWfa == 1;
-        
+
         // Set tag color and text based on work location type
         final Color tagColor = isWfa ? Colors.green : Colors.amber;
         final String tagText = isWfa ? 'WFA' : 'WFO';
@@ -73,11 +94,23 @@ class AttendancesView extends GetView<AttendancesController> {
                   bottomRight: Radius.circular(20),
                 ),
                 child: FlutterMap(
+                  mapController: mapController,
                   options: MapOptions(
-                    initialCenter: bandungCoords,
-                    initialZoom: 15.0,
+                    initialCenter:
+                        showOfficeLocation.value ? officeCoords : userCoords,
+                    initialZoom: showOfficeLocation.value ? 15.0 : 17.0,
                     maxZoom: 18.0,
                     minZoom: 10.0,
+                    onMapReady: () {
+                      // Initialize the zoom value
+                      currentZoom.value = mapController.camera.zoom;
+                    },
+                    onMapEvent: (event) {
+                      // Update zoom value when map moves
+                      if (event is MapEventMove) {
+                        currentZoom.value = event.camera.zoom;
+                      }
+                    },
                   ),
                   children: [
                     TileLayer(
@@ -86,10 +119,32 @@ class AttendancesView extends GetView<AttendancesController> {
                       userAgentPackageName: 'com.example.app',
                       tileProvider: CancellableNetworkTileProvider(),
                     ),
+                    // Dynamic circle layer at office coordinates - only show when viewing office
+                    if (showOfficeLocation.value)
+                      Obx(() {
+                        // Calculate how many pixels represent our radius in meters at the current zoom level
+                        final metersPerPixel = 156543.03392 *
+                            cos(officeCoords.latitude * pi / 180) /
+                            pow(2, currentZoom.value);
+                        final radiusInPixels = radiusInMeters / metersPerPixel;
+
+                        return CircleLayer(
+                          circles: [
+                            CircleMarker(
+                              point: officeCoords,
+                              radius: radiusInPixels,
+                              color: Colors.blue.withOpacity(0.2),
+                              borderColor: Colors.blue.withOpacity(0.7),
+                              borderStrokeWidth: 2,
+                            ),
+                          ],
+                        );
+                      }),
                     MarkerLayer(
                       markers: [
+                        // User marker - always show
                         Marker(
-                          point: bandungCoords,
+                          point: userCoords,
                           width: 40,
                           height: 40,
                           child: Container(
@@ -102,6 +157,25 @@ class AttendancesView extends GetView<AttendancesController> {
                                 Icons.location_on,
                                 color: Colors.blue,
                                 size: 30,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Office marker - always show
+                        Marker(
+                          point: officeCoords,
+                          width: 40,
+                          height: 40,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.business,
+                                color: Colors.red,
+                                size: 24,
                               ),
                             ),
                           ),
@@ -131,12 +205,48 @@ class AttendancesView extends GetView<AttendancesController> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    _buildInfoRow(
-                      icon: Icons.business,
-                      title: 'Kantor',
-                      subtitle: officeName,
-                      tagColor: tagColor,
-                      tagText: tagText,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoRow(
+                            icon: Icons.business,
+                            title: 'Kantor',
+                            subtitle: officeName,
+                            tagColor: tagColor,
+                            tagText: tagText,
+                          ),
+                        ),
+                        // Button to toggle between office and user location
+                        Obx(() => ElevatedButton(
+                              onPressed: () {
+                                showOfficeLocation.value =
+                                    !showOfficeLocation.value;
+                                moveToLocation(
+                                    showOfficeLocation.value
+                                        ? officeCoords
+                                        : userCoords,
+                                    showOfficeLocation.value ? 15.0 : 17.0);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4051B5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 8),
+                              ),
+                              child: Text(
+                                showOfficeLocation.value
+                                    ? 'Lihat Lokasi Saya'
+                                    : 'Lihat Lokasi Kantor',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )),
+                      ],
                     ),
                     const Divider(height: 24),
                     _buildInfoRow(
