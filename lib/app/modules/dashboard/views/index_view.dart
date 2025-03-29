@@ -323,27 +323,40 @@ class IndexView extends GetView<DashboardController> {
                     controller.get_attendance.value!.data!.hariIni!.endTime!
                         .isNotEmpty;
 
-            return ElevatedButton.icon(
-              onPressed: () {
-                // Untuk semua kasus, navigasi ke AttendancesView
-                Get.to(() => const AttendancesView());
-              },
-              icon: hasEndTime
-                  ? const Icon(Icons.check_circle_outline)
-                  : Icon(hasStartTime ? Icons.logout : Icons.fingerprint),
-              label: Text(hasEndTime
-                  ? 'Kehadiran Selesai'
-                  : (hasStartTime ? 'Pulang' : 'Buat Kehadiran')),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: hasEndTime
-                    ? Colors.green[600]
-                    : (hasStartTime ? Colors.orange[600] : Colors.indigo[600]),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            // Bungkus dengan GestureDetector untuk mendeteksi ketukan pada tombol yang dinonaktifkan
+            return GestureDetector(
+              onTap: hasEndTime ? showAttendanceCompletedInfo : null,
+              child: ElevatedButton.icon(
+                // Dinonaktifkan jika kehadiran sudah selesai (hasEndTime = true)
+                onPressed: hasEndTime
+                    ? null
+                    : () {
+                        // Navigasi ke AttendancesView
+                        Get.to(() => const AttendancesView());
+                      },
+                icon: hasEndTime
+                    ? const Icon(Icons.check_circle_outline)
+                    : Icon(
+                        hasStartTime ? Icons.logout : Icons.fingerprint),
+                label: Text(hasEndTime
+                    ? 'Kehadiran Selesai'
+                    : (hasStartTime ? 'Pulang' : 'Buat Kehadiran')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: hasEndTime
+                      ? Colors.green[600]
+                      : (hasStartTime
+                          ? Colors.orange[600]
+                          : Colors.indigo[600]),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                  // Tambahkan opacity pada tombol jika kehadiran sudah selesai
+                  disabledBackgroundColor: Colors.green[600]?.withOpacity(0.7),
+                  disabledForegroundColor: Colors.white.withOpacity(0.8),
                 ),
-                elevation: 0,
               ),
             );
           }),
