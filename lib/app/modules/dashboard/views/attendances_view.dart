@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:zoom_tap_animation/zoom_tap_animation.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:ujikom/app/modules/attendances/controllers/attendances_controller.dart';
-import 'dart:math' show cos, pi, pow;
+import 'dart:math' show cos, pow;
 
 class AttendancesView extends GetView<AttendancesController> {
   const AttendancesView({super.key});
