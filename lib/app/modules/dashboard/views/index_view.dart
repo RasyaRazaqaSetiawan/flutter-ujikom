@@ -51,24 +51,56 @@ class IndexView extends GetView<DashboardController> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileCard(),
-            const SizedBox(height: 16),
-            _buildAttendanceCard(),
-            const SizedBox(height: 20),
-            _buildLeaveRequestCard(),
-            const SizedBox(height: 20),
-            _buildStatisticsSection(),
-            const SizedBox(height: 20),
-            _buildLeaveHistorySection(),
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
+      body: Obx(() {
+        // Check if data is still loading
+        if (controller.schedule.value == null ||
+            controller.get_attendance.value == null ||
+            controller.get_leave.value == null) {
+          return Container(
+            height: MediaQuery.of(context).size.height,
+            width: double.infinity,
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Colors.indigo,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    "Memuat data...",
+                    style: TextStyle(
+                      color: Colors.indigo,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // If data is available, show the normal content
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProfileCard(),
+              const SizedBox(height: 16),
+              _buildAttendanceCard(),
+              const SizedBox(height: 20),
+              _buildLeaveRequestCard(),
+              const SizedBox(height: 20),
+              _buildStatisticsSection(),
+              const SizedBox(height: 20),
+              _buildLeaveHistorySection(),
+              const SizedBox(height: 30),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -336,8 +368,7 @@ class IndexView extends GetView<DashboardController> {
                       },
                 icon: hasEndTime
                     ? const Icon(Icons.check_circle_outline)
-                    : Icon(
-                        hasStartTime ? Icons.logout : Icons.fingerprint),
+                    : Icon(hasStartTime ? Icons.logout : Icons.fingerprint),
                 label: Text(hasEndTime
                     ? 'Kehadiran Selesai'
                     : (hasStartTime ? 'Pulang' : 'Buat Kehadiran')),
@@ -480,79 +511,35 @@ class IndexView extends GetView<DashboardController> {
   }
 
   Widget _buildLeaveHistorySection() {
-    return Obx(() {
-      // Cek apakah data leave sudah tersedia
-      if (controller.get_leave.value == null) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
-      final leaveHistory = controller.get_leave.value?.data ?? [];
-
-      // Cek jika data cuti kosong
-      if (leaveHistory.isEmpty) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Riwayat Cuti',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.event_busy,
-                      size: 40,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Tidak ada data cuti',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    // Cek apakah data leave sudah tersedia
+    if (controller.get_leave.value == null) {
+      return Container(
+        height: 200,
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: const Offset(0, 3),
             ),
           ],
-        );
-      }
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Colors.indigo,
+          ),
+        ),
+      );
+    }
 
-      // Batasi hanya 3 data yang ditampilkan
-      final limitedLeaveHistory = leaveHistory.take(3).toList();
+    final leaveHistory = controller.get_leave.value?.data ?? [];
 
+    // Cek jika data cuti kosong
+    if (leaveHistory.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -569,25 +556,13 @@ class IndexView extends GetView<DashboardController> {
                     color: Colors.grey[800],
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    Get.to(() => const LeaveDetailView());
-                  },
-                  child: Text(
-                    'Lihat Semua',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.indigo[600],
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
           const SizedBox(height: 8),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 30),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -600,101 +575,175 @@ class IndexView extends GetView<DashboardController> {
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: ListView.separated(
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemCount: limitedLeaveHistory.length,
-                separatorBuilder: (context, index) => Divider(
-                  height: 1,
-                  color: Colors.grey[200],
-                ),
-                itemBuilder: (context, index) {
-                  final leave = limitedLeaveHistory[index];
-                  final category =
-                      leave.categoriesLeave ?? 'Cuti Tidak Diketahui';
-
-                  // Menentukan warna status berdasarkan status cuti
-                  Color statusColor;
-                  String statusText;
-
-                  switch (leave.status) {
-                    case 'approved':
-                      statusColor = Colors.green;
-                      statusText = 'Disetujui';
-                      break;
-                    case 'rejected':
-                      statusColor = Colors.red;
-                      statusText = 'Ditolak';
-                      break;
-                    case 'pending':
-                    default:
-                      statusColor = Colors.amber;
-                      statusText = 'Pending';
-                      break;
-                  }
-
-                  // Mengambil ikon kategori dari controller
-                  final IconData categoryIcon =
-                      controller.categoryIcons[category] ?? Icons.event_note;
-
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.event_busy,
+                    size: 40,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tidak ada data cuti',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
                     ),
-                    leading: Icon(
-                      categoryIcon,
-                      color: Color(0xFF4051B5),
-                      size: 24,
-                    ),
-                    title: Text(
-                      controller.formatCategory(category),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text(
-                          '${leave.formattedDates ?? 'Tanggal Tidak Tersedia'} (${leave.days ?? 0} hari)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        statusText,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: statusColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ),
         ],
       );
-    });
+    }
+
+    // Batasi hanya 3 data yang ditampilkan
+    final limitedLeaveHistory = leaveHistory.take(3).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Riwayat Cuti',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Get.to(() => const LeaveDetailView());
+                },
+                child: Text(
+                  'Lihat Semua',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.indigo[600],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: ListView.separated(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: limitedLeaveHistory.length,
+              separatorBuilder: (context, index) => Divider(
+                height: 1,
+                color: Colors.grey[200],
+              ),
+              itemBuilder: (context, index) {
+                final leave = limitedLeaveHistory[index];
+                final category =
+                    leave.categoriesLeave ?? 'Cuti Tidak Diketahui';
+
+                // Menentukan warna status berdasarkan status cuti
+                Color statusColor;
+                String statusText;
+
+                switch (leave.status) {
+                  case 'approved':
+                    statusColor = Colors.green;
+                    statusText = 'Disetujui';
+                    break;
+                  case 'rejected':
+                    statusColor = Colors.red;
+                    statusText = 'Ditolak';
+                    break;
+                  case 'pending':
+                  default:
+                    statusColor = Colors.amber;
+                    statusText = 'Pending';
+                    break;
+                }
+
+                // Mengambil ikon kategori dari controller
+                final IconData categoryIcon =
+                    controller.categoryIcons[category] ?? Icons.event_note;
+
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  leading: Icon(
+                    categoryIcon,
+                    color: Color(0xFF4051B5),
+                    size: 24,
+                  ),
+                  title: Text(
+                    controller.formatCategory(category),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        '${leave.formattedDates ?? 'Tanggal Tidak Tersedia'} (${leave.days ?? 0} hari)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: statusColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildTimeInfo(String label, String time, IconData icon, Color color) {

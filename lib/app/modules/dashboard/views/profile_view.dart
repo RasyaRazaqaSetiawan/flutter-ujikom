@@ -57,14 +57,49 @@ class ProfileView extends GetView<ProfileController> {
             Obx(() {
               // Check if the profile data is available
               if (controller.profile.value == null) {
-                return const Center(child: CircularProgressIndicator());
+                return Container(
+                  height: MediaQuery.of(context).size.height -
+                      100, // Kurangi tinggi AppBar dan padding
+                  width: double.infinity,
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Colors.indigo,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          "Memuat data...",
+                          style: TextStyle(
+                            color: Colors.indigo,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               }
 
               final profileData =
                   controller.profile.value?.data; // Access profile data
 
               if (profileData == null) {
-                return const Center(child: Text("Data profil tidak tersedia"));
+                return Container(
+                  height: MediaQuery.of(context).size.height - 100,
+                  width: double.infinity,
+                  child: const Center(
+                    child: Text(
+                      "Data profil tidak tersedia",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
               }
 
               return Column(
@@ -169,8 +204,9 @@ class ProfileView extends GetView<ProfileController> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              // user?.gender ?? 'Staff IT',
-              'Staff IT',
+              user?.roles != null && user.roles!.isNotEmpty
+                  ? user.roles![0] // Display the first role
+                  : 'Tidak ada jabatan', // Message when no roles
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,

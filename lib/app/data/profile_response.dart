@@ -31,6 +31,7 @@ class Data {
   String? address;
   String? dateOfBirth;
   String? profilePhoto;
+  List<String>? roles;
 
   Data(
       {this.id,
@@ -40,7 +41,8 @@ class Data {
       this.phoneNumber,
       this.address,
       this.dateOfBirth,
-      this.profilePhoto});
+      this.profilePhoto,
+      this.roles});
 
   Data.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -51,6 +53,7 @@ class Data {
     address = json['address'];
     dateOfBirth = json['date_of_birth'];
     profilePhoto = json['profile_photo'];
+    roles = json['roles'].cast<String>();
   }
 
   Map<String, dynamic> toJson() {
@@ -63,6 +66,7 @@ class Data {
     data['address'] = this.address;
     data['date_of_birth'] = this.dateOfBirth;
     data['profile_photo'] = this.profilePhoto;
+    data['roles'] = this.roles;
     return data;
   }
 }
