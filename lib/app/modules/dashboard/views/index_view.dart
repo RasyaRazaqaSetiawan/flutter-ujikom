@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:ujikom/app/modules/dashboard/controllers/dashboard_controller.dart';
 import 'package:ujikom/app/modules/dashboard/views/attendances_view.dart';
@@ -21,7 +22,7 @@ class IndexView extends GetView<DashboardController> {
               controller.schedule.value?.data?.employeeName ?? 'Pengguna';
           return Text(
             'Selamat Datang, $name',
-            style: const TextStyle(
+            style: GoogleFonts.poppins(
               color: Colors.white,
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -810,9 +811,9 @@ class IndexView extends GetView<DashboardController> {
             physics: const BouncingScrollPhysics(),
             children: [
               _buildStatisticCard(
-                  'Hadir', '0', Icons.check_circle_outline, Colors.green),
+                  'Tepat Waktu', '${controller.attendanceCount.value}', Icons.check_circle_outline, Colors.green),
               _buildStatisticCard(
-                  'Terlambat', '0', Icons.access_time, Colors.orange),
+                  'Terlambat', '${controller.attendanceLateCount.value}', Icons.access_time, Colors.orange),
               Obx(() {
                 return _buildStatisticCard(
                     'Izin/Cuti',

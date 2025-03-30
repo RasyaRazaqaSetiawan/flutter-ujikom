@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:ujikom/app/modules/profile/controllers/profile_controller.dart';
 
 class ProfileView extends GetView<ProfileController> {
@@ -20,7 +21,7 @@ class ProfileView extends GetView<ProfileController> {
           final name = controller.profile.value?.data?.name ?? 'Pengguna';
           return Text(
             'Selamat Datang, $name',
-            style: const TextStyle(
+            style: GoogleFonts.poppins(
               color: Colors.white,
               fontWeight: FontWeight.w600,
               fontSize: 18,

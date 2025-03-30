@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:ujikom/app/data/get_attendance_response.dart';
 import 'package:ujikom/app/data/get_leave_response.dart';
 import 'package:ujikom/app/data/schedule_respones.dart';
+import 'package:ujikom/app/modules/dashboard/views/history_view.dart';
 import 'package:ujikom/app/modules/dashboard/views/index_view.dart';
 import 'package:ujikom/app/modules/dashboard/views/profile_view.dart';
 import 'package:ujikom/app/utils/api.dart';
@@ -13,6 +14,8 @@ class DashboardController extends GetxController {
   // State Management with Rx
   final selectedIndex = 0.obs;
   final approvedLeaveCount = 0.obs;
+  final attendanceCount = 0.obs;
+  final attendanceLateCount = 0.obs;
   final approvedSickCount = 0.obs;
   final schedule = Rxn<ScheduleResponse>();
   final get_leave = Rxn<get_leave_respones>();
@@ -28,6 +31,7 @@ class DashboardController extends GetxController {
   // Pages used in bottom navigation
   final List<Widget> pages = [
     IndexView(),
+    HistoryView(),
     ProfileView(),
   ];
 
@@ -45,14 +49,28 @@ class DashboardController extends GetxController {
     fetchSchedule();
     fetchAttendance();
     fetchLeave();
+    fetchAttendanceCount();
+    fetchLateCount();
     fetchApprovedLeaveCount();
     fetchApprovedSickCount();
   }
 
-  // Get token from storage
-  Future<String?> getToken() async {
-    return await box.read('token');
+  // NAVIGATION & UI METHODS
+  //----------------------------------------
+
+  // Change bottom navigation page index
+  void changeIndex(int index) {
+    selectedIndex.value = index;
   }
+
+  // Logout function
+  void logout() {
+    GetStorage().erase();
+    Get.offAllNamed('/login');
+  }
+
+  // FORMAT & DISPLAY METHODS
+  //----------------------------------------
 
   // Format category with icon
   Widget formatCategoryWithIcon(String category) {
@@ -93,18 +111,15 @@ class DashboardController extends GetxController {
     return _getCategoryName(category);
   }
 
-  // Change bottom navigation page index
-  void changeIndex(int index) {
-    selectedIndex.value = index;
+  // AUTH & TOKEN METHODS
+  //----------------------------------------
+
+  // Get token from storage
+  Future<String?> getToken() async {
+    return await box.read('token');
   }
 
-  // Logout function
-  void logout() {
-    GetStorage().erase();
-    Get.offAllNamed('/login');
-  }
-
-  // API Calls
+  // API CALLS
   //----------------------------------------
 
   // Fetch schedule data from API
@@ -153,63 +168,6 @@ class DashboardController extends GetxController {
     }
   }
 
-  // Metode untuk melakukan absensi (masuk atau pulang)
-  Future<void> storeAttendance(String type) async {
-    try {
-      final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
-      }
-
-      final response = await _getConnect.post(
-        BaseUrl.storeAttendance,
-        {
-          'type': type, // 'in' untuk absen masuk, 'out' untuk absen pulang
-        },
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      if (response.statusCode == 200) {
-        await fetchAttendance(); // Refresh data kehadiran
-        final message = type == 'in'
-            ? 'Absen masuk berhasil dicatat'
-            : 'Absen pulang berhasil dicatat';
-        Get.snackbar(
-          'Berhasil',
-          message,
-          backgroundColor: Colors.green[600],
-          colorText: Colors.white,
-          duration: Duration(seconds: 2),
-        );
-      } else {
-        final errorMessage =
-            type == 'in' ? 'Gagal absen masuk' : 'Gagal absen pulang';
-        throw Exception("$errorMessage: ${response.statusText}");
-      }
-    } catch (e) {
-      final errorTitle =
-          type == 'in' ? 'Gagal Absen Masuk' : 'Gagal Absen Pulang';
-      Get.snackbar(
-        errorTitle,
-        'Error: $e',
-        backgroundColor: Colors.red[600],
-        colorText: Colors.white,
-        duration: Duration(seconds: 3),
-      );
-      print("Error saat absen ${type == 'in' ? 'masuk' : 'pulang'}: $e");
-    }
-  }
-
-// Helper method untuk absen masuk
-  Future<void> clockIn() async {
-    await storeAttendance('in');
-  }
-
-// Helper method untuk absen pulang
-  Future<void> clockOut() async {
-    await storeAttendance('out');
-  }
-
   // Fetch leave data from API
   Future<void> fetchLeave() async {
     try {
@@ -231,6 +189,59 @@ class DashboardController extends GetxController {
       }
     } catch (e) {
       print("Error saat mengambil data cuti: $e");
+    }
+  }
+
+  // Fetch approved Attendance count from API
+  Future<void> fetchAttendanceCount() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw Exception("Token tidak ditemukan, silakan login kembali.");
+      }
+
+      final response = await _getConnect.get(
+        BaseUrl.attendanceCount,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        var data = response.body;
+        attendanceCount.value = data['count'];
+      } else {
+        throw Exception("Gagal mengambil data absen: ${response.statusText}");
+      }
+    } catch (e) {
+      print("Error saat mengambil data absen: $e");
+    }
+  }
+
+// Try adding debug prints to check the API response
+  Future<void> fetchLateCount() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw Exception("Token tidak ditemukan, silakan login kembali.");
+      }
+
+      final response = await _getConnect.get(
+        BaseUrl.attendanceLateCount,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      // Add these lines for debugging
+      print("Late count API response: ${response.body}");
+      print("Status code: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        var data = response.body;
+        attendanceLateCount.value = data['count'];
+        print("Late count set to: ${attendanceLateCount.value}");
+      } else {
+        throw Exception("Gagal mengambil data telat: ${response.statusText}");
+      }
+    } catch (e) {
+      print("Error saat mengambil data telat: $e");
     }
   }
 
@@ -282,7 +293,67 @@ class DashboardController extends GetxController {
     }
   }
 
-  // Helper methods
+  // ATTENDANCE METHODS
+  //----------------------------------------
+
+  // Process attendance (clock in or out)
+  Future<void> storeAttendance(String type) async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        throw Exception("Token tidak ditemukan, silakan login kembali.");
+      }
+
+      final response = await _getConnect.post(
+        BaseUrl.storeAttendance,
+        {
+          'type': type, // 'in' untuk absen masuk, 'out' untuk absen pulang
+        },
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        await fetchAttendance(); // Refresh data kehadiran
+        final message = type == 'in'
+            ? 'Absen masuk berhasil dicatat'
+            : 'Absen pulang berhasil dicatat';
+        Get.snackbar(
+          'Berhasil',
+          message,
+          backgroundColor: Colors.green[600],
+          colorText: Colors.white,
+          duration: Duration(seconds: 2),
+        );
+      } else {
+        final errorMessage =
+            type == 'in' ? 'Gagal absen masuk' : 'Gagal absen pulang';
+        throw Exception("$errorMessage: ${response.statusText}");
+      }
+    } catch (e) {
+      final errorTitle =
+          type == 'in' ? 'Gagal Absen Masuk' : 'Gagal Absen Pulang';
+      Get.snackbar(
+        errorTitle,
+        'Error: $e',
+        backgroundColor: Colors.red[600],
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
+      print("Error saat absen ${type == 'in' ? 'masuk' : 'pulang'}: $e");
+    }
+  }
+
+  // Helper method for clock in
+  Future<void> clockIn() async {
+    await storeAttendance('in');
+  }
+
+  // Helper method for clock out
+  Future<void> clockOut() async {
+    await storeAttendance('out');
+  }
+
+  // HELPER METHODS
   //----------------------------------------
 
   // Set the last leave date

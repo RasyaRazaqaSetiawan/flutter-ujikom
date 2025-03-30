@@ -9,6 +9,8 @@ class BaseUrl {
   static String attendanceToday = '$base/get-attendance-today';
   static String attendanceHistory = '$base/get-attendance-history';
   static String storeAttendance = '$base/attendance/store';
+  static String attendanceCount = '$base/attendance-on-time-count';
+  static String attendanceLateCount = '$base/attendance-late-count';
 
   // Endpoint untuk jadwal kerja
   static String schedule = '$base/get-schedule';

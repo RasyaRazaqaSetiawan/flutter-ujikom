@@ -38,19 +38,19 @@ class DashboardView extends GetView<DashboardController> {
                 label: 'Home',
                 controller: controller,
               ),
+              // Contoh menambah item navigasi ketiga:
               _buildNavItem(
-                index: 1,
+                index: 1, // Pastikan index bertambah secara berurutan
+                icon: Icons.history, // Pilih icon yang sesuai
+                label: 'History', // Label yang akan ditampilkan
+                controller: controller,
+              ),
+              _buildNavItem(
+                index: 2,
                 icon: Icons.person,
                 label: 'Profile',
                 controller: controller,
               ),
-              // Contoh menambah item navigasi ketiga:
-              // _buildNavItem(
-              //   index: 2, // Pastikan index bertambah secara berurutan
-              //   icon: Icons.notifications, // Pilih icon yang sesuai
-              //   label: 'Notifikasi', // Label yang akan ditampilkan
-              //   controller: controller,
-              // ),
             ],
           ),
         ),

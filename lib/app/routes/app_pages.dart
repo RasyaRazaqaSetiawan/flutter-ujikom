@@ -4,6 +4,8 @@ import '../modules/attendances/bindings/attendances_binding.dart';
 import '../modules/attendances/views/attendances_view.dart';
 import '../modules/dashboard/bindings/dashboard_binding.dart';
 import '../modules/dashboard/views/dashboard_view.dart';
+import '../modules/history/bindings/history_binding.dart';
+import '../modules/history/views/history_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/leave/bindings/leave_binding.dart';
@@ -50,6 +52,11 @@ class AppPages {
       name: _Paths.LEAVE,
       page: () => const LeaveView(),
       binding: LeaveBinding(),
+    ),
+    GetPage(
+      name: _Paths.HISTORY,
+      page: () => const HistoryView(),
+      binding: HistoryBinding(),
     ),
   ];
 }
