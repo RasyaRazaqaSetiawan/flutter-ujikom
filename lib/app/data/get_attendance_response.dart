@@ -69,7 +69,7 @@ class HariIni {
   String? checkOutPhoto;
   double? checkoutLatitude;
   double? checkoutLongitude;
-  String? endTimeStatus;
+  String? checkoutStatus;
   String? createdAt;
   String? updatedAt;
   String? officeName;
@@ -92,7 +92,7 @@ class HariIni {
       this.checkOutPhoto,
       this.checkoutLatitude,
       this.checkoutLongitude,
-      this.endTimeStatus,
+      this.checkoutStatus,
       this.createdAt,
       this.updatedAt,
       this.officeName,
@@ -115,7 +115,7 @@ class HariIni {
     checkOutPhoto = json['check_out_photo'];
     checkoutLatitude = json['checkout_latitude'];
     checkoutLongitude = json['checkout_longitude'];
-    endTimeStatus = json['end_time_status'];
+    checkoutStatus = json['checkout_status'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
     officeName = json['office_name'];
@@ -140,7 +140,7 @@ class HariIni {
     data['check_out_photo'] = this.checkOutPhoto;
     data['checkout_latitude'] = this.checkoutLatitude;
     data['checkout_longitude'] = this.checkoutLongitude;
-    data['end_time_status'] = this.endTimeStatus;
+    data['checkout_status'] = this.checkoutStatus;
     data['created_at'] = this.createdAt;
     data['updated_at'] = this.updatedAt;
     data['office_name'] = this.officeName;

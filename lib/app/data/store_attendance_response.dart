@@ -1,20 +1,20 @@
 class AttendanceResponse {
   String? status;
-  String? pesan;
+  String? message;
   Data? data;
 
-  AttendanceResponse({this.status, this.pesan, this.data});
+  AttendanceResponse({this.status, this.message, this.data});
 
   AttendanceResponse.fromJson(Map<String, dynamic> json) {
     status = json['status'];
-    pesan = json['pesan'];
+    message = json['message'];
     data = json['data'] != null ? new Data.fromJson(json['data']) : null;
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['status'] = this.status;
-    data['pesan'] = this.pesan;
+    data['message'] = this.message;
     if (this.data != null) {
       data['data'] = this.data!.toJson();
     }
@@ -64,7 +64,7 @@ class Absensi {
   String? checkOutPhoto;
   String? checkoutLatitude;
   String? checkoutLongitude;
-  String? endTimeStatus;
+  String? checkoutStatus;
   String? createdAt;
   String? updatedAt;
 
@@ -85,7 +85,7 @@ class Absensi {
       this.checkOutPhoto,
       this.checkoutLatitude,
       this.checkoutLongitude,
-      this.endTimeStatus,
+      this.checkoutStatus,
       this.createdAt,
       this.updatedAt});
 
@@ -106,7 +106,7 @@ class Absensi {
     checkOutPhoto = json['check_out_photo'];
     checkoutLatitude = json['checkout_latitude'];
     checkoutLongitude = json['checkout_longitude'];
-    endTimeStatus = json['end_time_status'];
+    checkoutStatus = json['checkout_status'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
   }
@@ -129,7 +129,7 @@ class Absensi {
     data['check_out_photo'] = this.checkOutPhoto;
     data['checkout_latitude'] = this.checkoutLatitude;
     data['checkout_longitude'] = this.checkoutLongitude;
-    data['end_time_status'] = this.endTimeStatus;
+    data['checkout_status'] = this.checkoutStatus;
     data['created_at'] = this.createdAt;
     data['updated_at'] = this.updatedAt;
     return data;

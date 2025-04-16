@@ -1,11 +1,11 @@
-class ProfileResponse {
+class UpdateProfileResponse {
   bool? success;
   Data? data;
   String? message;
 
-  ProfileResponse({this.success, this.data, this.message});
+  UpdateProfileResponse({this.success, this.data, this.message});
 
-  ProfileResponse.fromJson(Map<String, dynamic> json) {
+  UpdateProfileResponse.fromJson(Map<String, dynamic> json) {
     success = json['success'];
     data = json['data'] != null ? new Data.fromJson(json['data']) : null;
     message = json['message'];
@@ -35,8 +35,6 @@ class Data {
   String? employeeId;
   String? position;
   String? department;
-  String? status;
-  List<String>? roles;
 
   Data(
       {this.id,
@@ -50,9 +48,7 @@ class Data {
       this.profilePhotoName,
       this.employeeId,
       this.position,
-      this.department,
-      this.status,
-      this.roles});
+      this.department});
 
   Data.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -67,8 +63,6 @@ class Data {
     employeeId = json['employee_id'];
     position = json['position'];
     department = json['department'];
-    status = json['status'];
-    roles = json['roles'].cast<String>();
   }
 
   Map<String, dynamic> toJson() {
@@ -85,8 +79,6 @@ class Data {
     data['employee_id'] = this.employeeId;
     data['position'] = this.position;
     data['department'] = this.department;
-    data['status'] = this.status;
-    data['roles'] = this.roles;
     return data;
   }
 }

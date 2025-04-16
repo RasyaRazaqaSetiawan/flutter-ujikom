@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ujikom/app/modules/dashboard/views/edit_profile_view.dart';
 import 'package:ujikom/app/modules/profile/controllers/profile_controller.dart';
 
 class ProfileView extends GetView<ProfileController> {
@@ -153,36 +154,55 @@ class ProfileView extends GetView<ProfileController> {
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.person,
-                    size: 60,
-                    color: Colors.indigo,
-                  ),
-                ),
+                child:
+                    user?.profilePhoto == null || user?.profilePhotoName == null
+                        ? const CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.white,
+                            child: Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.indigo,
+                            ),
+                          )
+                        : CircleAvatar(
+                            radius: 50,
+                            backgroundImage: NetworkImage(
+                              user.profilePhoto, // Fixed: Use the full profile photo URL
+                            ),
+                          ),
               ),
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                child: Material(
+                  color: Colors.transparent,
+                  child: IconButton(
+                    onPressed: () {
+                      // Navigate to edit profile page
+                      Get.to(() => EditProfileView());
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.edit,
-                    size: 20,
-                    color: Colors.indigo[600],
+                      child: Icon(
+                        Icons.edit,
+                        size: 20,
+                        color: Colors.indigo[600],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -190,7 +210,8 @@ class ProfileView extends GetView<ProfileController> {
           ),
           const SizedBox(height: 16),
           Text(
-            user?.name?.split(' ').first ?? 'Nama Pengguna', // First name only
+            // user?.name?.split(' ').first ?? 'Nama Pengguna', // First name only
+            user?.name ?? 'Nama Pengguna', // First name only
             style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -205,9 +226,7 @@ class ProfileView extends GetView<ProfileController> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              user?.roles != null && user.roles!.isNotEmpty
-                  ? user.roles![0] // Display the first role
-                  : 'Tidak ada jabatan', // Message when no roles
+              user?.position ?? 'Posisi Tidak Tersedia',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -247,11 +266,17 @@ class ProfileView extends GetView<ProfileController> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildInfoItem(Icons.person_outline_outlined, 'Nama Lengkap',
+          _buildInfoItem(Icons.badge_outlined, 'Id Karyawan',
+              user?.employeeId ?? 'ID Tidak Tersedia'),
+          const Divider(height: 24),
+          _buildInfoItem(Icons.person_outline, 'Nama Lengkap',
               user?.name ?? 'Nama Tidak Tersedia'),
           const Divider(height: 24),
           _buildInfoItem(Icons.email_outlined, 'Email',
               user?.email ?? 'Email Tidak Tersedia'),
+          const Divider(height: 24),
+          _buildInfoItem(Icons.business_outlined, 'Departemen',
+              user?.department ?? 'Department Tidak Tersedia'),
           const Divider(height: 24),
           _buildInfoItem(Icons.phone_outlined, 'Telepon',
               user?.phoneNumber ?? 'Nomor Tidak Tersedia'),
@@ -259,7 +284,7 @@ class ProfileView extends GetView<ProfileController> {
           _buildInfoItem(Icons.location_on_outlined, 'Alamat',
               user?.address ?? 'Alamat Tidak Tersedia'),
           const Divider(height: 24),
-          _buildInfoItem(Icons.accessibility_new_outlined, 'Jenis Kelamin',
+          _buildInfoItem(Icons.wc_outlined, 'Jenis Kelamin',
               user?.gender ?? 'Jenis Kelamin Tidak Tersedia'),
           const Divider(height: 24),
           _buildInfoItem(Icons.calendar_today_outlined, 'Tanggal Lahir',

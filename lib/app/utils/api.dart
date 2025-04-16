@@ -4,6 +4,7 @@ class BaseUrl {
   static String login = '$base/login';
   static String logout = '$base/logout';
   static String profile = '$base/profile';
+  static String updateProfile = '$base/profile/update';
   
   // endpoint untuk absensi
   static String attendanceToday = '$base/get-attendance-today';

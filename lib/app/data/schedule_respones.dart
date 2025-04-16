@@ -26,7 +26,7 @@ class Data {
   String? employeeName;
   Office? office;
   Shift? shift;
-  int? isWfa;
+  bool? isWfa;
 
   Data({this.employeeName, this.office, this.shift, this.isWfa});
 

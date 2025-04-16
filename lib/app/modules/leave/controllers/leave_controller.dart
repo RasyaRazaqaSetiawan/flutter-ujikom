@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -26,6 +27,8 @@ class LeaveController extends GetxController {
   var leaveDuration = 0.obs;
   var isFormValid = false.obs;
   var isLoading = false.obs;
+  var hasError = false.obs;
+  var errorMessage = 'Terjadi kesalahan saat memproses pengajuan cuti.'.obs;
 
   final box = GetStorage();
   final _getConnect = GetConnect();
@@ -214,30 +217,39 @@ class LeaveController extends GetxController {
   }) async {
     try {
       isLoading.value = true;
+      hasError.value = false; // Reset error state
+      errorMessage.value =
+          'Terjadi kesalahan saat memproses pengajuan cuti.'; // Reset error message
 
       // Input validation
       if (categoriesLeave == 'Pilih Kategori') {
-        Get.snackbar('Error', 'Silakan pilih kategori cuti');
+        errorMessage.value = 'Silakan pilih kategori cuti';
+        hasError.value = true;
         isLoading.value = false;
         return;
       }
 
       if (startDate == 'Pilih Tanggal Mulai' ||
           endDate == 'Pilih Tanggal Akhir') {
-        Get.snackbar('Error', 'Silakan pilih tanggal mulai dan selesai');
+        errorMessage.value = 'Silakan pilih tanggal mulai dan selesai';
+        hasError.value = true;
         isLoading.value = false;
         return;
       }
 
       if (reason.isEmpty) {
-        Get.snackbar('Error', 'Silakan isi alasan cuti');
+        errorMessage.value = 'Silakan isi alasan cuti';
+        hasError.value = true;
         isLoading.value = false;
         return;
       }
 
       final token = await getToken();
       if (token == null) {
-        throw Exception("Token tidak ditemukan.");
+        errorMessage.value = "Token tidak ditemukan. Harap login kembali.";
+        hasError.value = true;
+        isLoading.value = false;
+        return;
       }
 
       // Format dates
@@ -270,7 +282,8 @@ class LeaveController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Terjadi kesalahan: ${e.toString()}');
+      errorMessage.value = 'Terjadi kesalahan: ${e.toString()}';
+      hasError.value = true;
     } finally {
       isLoading.value = false;
     }
@@ -315,10 +328,31 @@ class LeaveController extends GetxController {
     var response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      Get.snackbar('Sukses', 'Permintaan cuti berhasil disimpan');
       resetForm();
+      hasError.value = false;
     } else {
-      Get.snackbar('Error', 'Gagal mengirim permintaan cuti: ${response.body}');
+      // Parse error message from response
+      try {
+        final jsonResponse = json.decode(response.body);
+        if (jsonResponse['message'] != null) {
+          errorMessage.value = jsonResponse['message'];
+        } else if (jsonResponse['errors'] != null) {
+          // Handle validation errors
+          final errors = jsonResponse['errors'] as Map<String, dynamic>;
+          final firstError = errors.entries.first.value;
+          if (firstError is List && firstError.isNotEmpty) {
+            errorMessage.value = firstError.first.toString();
+          } else {
+            errorMessage.value = 'Terdapat kesalahan pada form yang diisi.';
+          }
+        } else {
+          errorMessage.value =
+              'Gagal mengirim permintaan cuti. Kode: ${response.statusCode}';
+        }
+      } catch (e) {
+        errorMessage.value = 'Gagal mengirim permintaan cuti: ${response.body}';
+      }
+      hasError.value = true;
     }
   }
 

@@ -272,13 +272,14 @@ class LeaveView extends GetView<LeaveController> {
                           // Image placeholder or preview - dimodifikasi untuk web dan mobile
                           Obx(() {
                             bool hasImage = false;
-                            
+
                             if (kIsWeb) {
                               hasImage = controller.webImage.value != null;
                             } else {
-                              hasImage = controller.selectedImage.value.isNotEmpty;
+                              hasImage =
+                                  controller.selectedImage.value.isNotEmpty;
                             }
-                            
+
                             return Container(
                               height: 200,
                               width: double.infinity,
@@ -348,7 +349,7 @@ class LeaveView extends GetView<LeaveController> {
 
                     const SizedBox(height: 30),
 
-                    // Submit button
+// Submit button
                     Obx(() => SizedBox(
                           width: double.infinity,
                           height: 55,
@@ -366,10 +367,19 @@ class LeaveView extends GetView<LeaveController> {
                                           controller.scheduleOffice.value,
                                     )
                                         .then((_) {
-                                      // Tampilkan dialog sukses jika diperlukan
-                                      if (!controller.isLoading.value) {
+                                      // Tampilkan dialog sukses jika tidak ada error
+                                      if (!controller.isLoading.value &&
+                                          !controller.hasError.value) {
                                         _showSuccessDialog(context);
+                                      } else if (controller.hasError.value) {
+                                        // Tampilkan dialog error jika ada error
+                                        _showErrorDialog(context,
+                                            controller.errorMessage.value);
                                       }
+                                    }).catchError((error) {
+                                      // Handle any unexpected errors
+                                      _showErrorDialog(context,
+                                          'Terjadi kesalahan: ${error.toString()}');
                                     });
                                   }
                                 : null,
@@ -512,6 +522,73 @@ class LeaveView extends GetView<LeaveController> {
               ],
             ),
           )),
+    );
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  color: Colors.red[600],
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Pengajuan Cuti Gagal',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    controller.resetForm();
+                    Get.offAll(() => const DashboardView());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[600],
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Kembali'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

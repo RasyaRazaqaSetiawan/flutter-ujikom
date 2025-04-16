@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ujikom/app/modules/history/controllers/history_controller.dart';
-// import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class HistoryView extends GetView<HistoryController> {
   const HistoryView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Initialize date formatting for Indonesia locale
+    initializeDateFormatting('id_ID', null);
     Get.put(HistoryController());
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -53,12 +56,10 @@ class HistoryView extends GetView<HistoryController> {
           ),
         ),
       ),
-      // Menghapus bottom navigation bar
     );
   }
 
   Widget _buildCalendarHeader(BuildContext context) {
-    // Using a simplified header with month picker
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 20, bottom: 20),
@@ -79,42 +80,43 @@ class HistoryView extends GetView<HistoryController> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTap: () {
-              _showMonthYearPicker(context);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.calendar_today_rounded,
-                    color: Colors.white,
-                    size: 18,
+          Obx(() => GestureDetector(
+                onTap: () {
+                  _showMonthYearPicker(context);
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(24),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Maret 2025',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        controller.getMonthYearText(),
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_drop_down,
-                    color: Colors.white,
-                  ),
-                ],
-              ),
-            ),
-          ),
+                ),
+              )),
         ],
       ),
     );
@@ -122,7 +124,7 @@ class HistoryView extends GetView<HistoryController> {
 
   Widget _buildDateSelection(BuildContext context) {
     // Days of the week labels with abbreviated format
-    final daysOfWeek = ['S', 'S', 'R', 'K', 'J', 'S', 'M'];
+    final daysOfWeek = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -161,7 +163,7 @@ class HistoryView extends GetView<HistoryController> {
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
-                        // Previous week logic
+                        controller.previousMonth();
                       },
                       icon: Container(
                         padding: const EdgeInsets.all(6),
@@ -181,7 +183,7 @@ class HistoryView extends GetView<HistoryController> {
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
-                        // Next week logic
+                        controller.nextMonth();
                       },
                       icon: Container(
                         padding: const EdgeInsets.all(6),
@@ -223,109 +225,95 @@ class HistoryView extends GetView<HistoryController> {
               }).toList(),
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
-          // Date picker grid - showing a week as an example
-          // Date picker grid dengan lebih banyak tanggal
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, // Menggunakan spaceBetween untuk memberi lebih banyak ruang
-              children: [
-                _buildDateItem('1'),
-                _buildDateItem('2'),
-                _buildDateItem('3'),
-                _buildDateItem('4'),
-                _buildDateItem('5'),
-                _buildDateItem('6'),
-                _buildDateItem('7'),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildDateItem('8'),
-                _buildDateItem('9'),
-                _buildDateItem('10'),
-                _buildDateItem('11'),
-                _buildDateItem('12'),
-                _buildDateItem('13'),
-                _buildDateItem('14'),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildDateItem('15'),
-                _buildDateItem('16'),
-                _buildDateItem('17'),
-                _buildDateItem('18'),
-                _buildDateItem('19'),
-                _buildDateItem('20'),
-                _buildDateItem('21'),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildDateItem('22'),
-                _buildDateItem('23'),
-                _buildDateItem('24'),
-                _buildDateItem('25', isSelected: true),
-                _buildDateItem('26'),
-                _buildDateItem('27'),
-                _buildDateItem('28'),
-              ],
-            ),
-          ),
-          
+
+          // Date grid - dynamically generated based on controller data
+          Obx(() => GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: 1.0,
+                  mainAxisSpacing: 6,
+                  crossAxisSpacing: 6,
+                ),
+                itemCount: controller.displayedDates.length,
+                itemBuilder: (context, index) {
+                  final date = controller.displayedDates[index];
+                  final isSelected =
+                      controller.selectedDateIndex.value == index;
+                  final isCurrentMonth = controller.isInCurrentMonth(date);
+                  final isToday = controller.isSameDay(date, DateTime.now());
+
+                  // Tambahkan Material widget untuk efek ripple saat diklik
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        if (isCurrentMonth) {
+                          controller.selectedDateIndex.value =
+                              index; // Pertama, update indeks
+                          controller.selectDate(date); // Kemudian select date
+
+                          // Force UI refresh dengan cara:
+                          controller.update(); // Tambahkan ini untuk memaksa pembaruan UI
+
+                          print(
+                              "Tanggal diklik: ${date.day}/${date.month}/${date.year}");
+                        }
+                      },
+                      borderRadius:
+                          BorderRadius.circular(50), // Circular border
+                      splashColor: Colors.indigo.withOpacity(0.3),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.indigo[600]
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.indigo.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            date.day.toString(),
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : isToday
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : isCurrentMonth
+                                      ? isToday
+                                          ? Colors.indigo
+                                          : Colors.grey[800]
+                                      : Colors.grey[400],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              )),
+
           const SizedBox(height: 16),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDateItem(String date, {bool isSelected = false}) {
-    return GestureDetector(
-      onTap: () {
-        // Date selection logic
-      },
-      child: Container(
-        width: 28, // Memperkecil lebar agar muat lebih banyak tanggal
-        height: 28, // Menjaga aspek persegi
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.indigo[600] : Colors.transparent,
-          shape: BoxShape.circle,
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.indigo.withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  )
-                ]
-              : null,
-        ),
-        child: Center(
-          child: Text(
-            date,
-            style: GoogleFonts.poppins(
-              fontSize: 13, // Sedikit memperkecil font
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.grey[800],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -346,8 +334,8 @@ class HistoryView extends GetView<HistoryController> {
           ),
         ),
         const SizedBox(height: 12),
-        
-        // Absensi Datang Card
+
+        // Absensi Datang Card (dummy data)
         _buildAttendanceCard(
           title: 'Absensi Datang',
           time: '14:53:56',
@@ -358,10 +346,10 @@ class HistoryView extends GetView<HistoryController> {
           longitude: '-6.2143513',
           isEntry: true,
         ),
-        
+
         const SizedBox(height: 16),
-        
-        // Absensi Pulang Card
+
+        // Absensi Pulang Card (dummy data)
         _buildAttendanceCard(
           title: 'Absensi Pulang',
           time: '16:45:11',
@@ -388,7 +376,7 @@ class HistoryView extends GetView<HistoryController> {
   }) {
     final cardColor = isEntry ? Colors.blue[500] : Colors.red[500];
     final cardLightColor = isEntry ? Colors.blue[50] : Colors.red[50];
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -448,7 +436,7 @@ class HistoryView extends GetView<HistoryController> {
               ],
             ),
           ),
-          
+
           // Information Section
           Padding(
             padding: const EdgeInsets.all(16),
@@ -461,7 +449,7 @@ class HistoryView extends GetView<HistoryController> {
                   cardColor!,
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Location
                 _buildInfoRow(
                   Icons.location_on_outlined,
@@ -469,16 +457,16 @@ class HistoryView extends GetView<HistoryController> {
                   cardColor,
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Status
                 _buildInfoRow(
                   Icons.check_circle_outline,
                   status,
                   cardColor,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Coordinate Container
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -532,35 +520,8 @@ class HistoryView extends GetView<HistoryController> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
-                // Map Button
-                // OutlinedButton.icon(
-                //   onPressed: () {
-                //     // Map view logic
-                //   },
-                //   icon: Icon(
-                //     Icons.map_outlined,
-                //     color: cardColor,
-                //     size: 18,
-                //   ),
-                //   label: Text(
-                //     'Lihat di Peta',
-                //     style: GoogleFonts.poppins(
-                //       color: cardColor,
-                //       fontSize: 14,
-                //       fontWeight: FontWeight.w500,
-                //     ),
-                //   ),
-                //   style: OutlinedButton.styleFrom(
-                //     minimumSize: const Size(double.infinity, 42),
-                //     shape: RoundedRectangleBorder(
-                //       borderRadius: BorderRadius.circular(12),
-                //     ),
-                //     side: BorderSide(color: cardColor),
-                //   ),
-                // ),
               ],
             ),
           ),
@@ -589,133 +550,164 @@ class HistoryView extends GetView<HistoryController> {
     );
   }
 
-  // Menghapus fungsi _buildBottomNavigation dan _buildNavItem
-
+  // FIXED: This method now correctly handles GetX reactivity for month/year selection
   void _showMonthYearPicker(BuildContext context) {
-    final currentYear = DateTime.now().year;
-    final years = List.generate(5, (index) => currentYear + index - 2);
+    final years = List.generate(5, (index) => DateTime.now().year + index - 2);
     final months = [
-      'Januari', 'Februari', 'Maret', 'April',
-      'Mei', 'Juni', 'Juli', 'Agustus',
-      'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
     ];
-    
+
+    // Create temporary values that don't use .obs inside the dialog
+    // This is key to fixing the GetX reactivity error
+    int tempSelectedYear = controller.focusedDate.value.year;
+    int tempSelectedMonth = controller.focusedDate.value.month;
+
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Pilih Bulan & Tahun',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+      builder: (BuildContext dialogContext) =>
+          StatefulBuilder(builder: (context, setState) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Pilih Bulan & Tahun',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              
-              // Year selection
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 20),
+
+                // Year selection
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: DropdownButton<int>(
+                    value: tempSelectedYear,
+                    isExpanded: true,
+                    underline: const SizedBox(),
+                    icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700]),
+                    items: years.map((year) {
+                      return DropdownMenuItem<int>(
+                        value: year,
+                        child: Text(
+                          year.toString(),
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey[800],
+                            fontSize: 15,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          tempSelectedYear = value;
+                        });
+                      }
+                    },
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: DropdownButton<int>(
-                  value: 2025,
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700]),
-                  items: years.map((year) {
-                    return DropdownMenuItem<int>(
-                      value: year,
-                      child: Text(
-                        year.toString(),
-                        style: GoogleFonts.poppins(
-                          color: Colors.grey[800],
-                          fontSize: 15,
+
+                const SizedBox(height: 16),
+
+                // Month grid
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 2.2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: months.length,
+                  itemBuilder: (context, index) {
+                    // Month index is 0-based in array but 1-based in DateTime
+                    final monthNumber = index + 1;
+                    final isSelected = monthNumber == tempSelectedMonth;
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          tempSelectedMonth = monthNumber;
+                        });
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.indigo[600]
+                              : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          months[index],
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: isSelected ? Colors.white : Colors.grey[800],
+                          ),
                         ),
                       ),
                     );
-                  }).toList(),
-                  onChanged: (value) {
-                    // Year selection logic
                   },
                 ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Month grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 2.2,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: months.length,
-                itemBuilder: (context, index) {
-                  final isSelected = index == 2; // Maret is selected
-                  return GestureDetector(
-                    onTap: () {
-                      // Month selection logic
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isSelected ? Colors.indigo[600] : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        months[index],
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected ? Colors.white : Colors.grey[800],
-                        ),
-                      ),
+
+                const SizedBox(height: 16),
+
+                // Apply button
+                ElevatedButton(
+                  onPressed: () {
+                    // Apply the selected month and year
+                    controller.setMonthYear(
+                        tempSelectedMonth, tempSelectedYear);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo[600],
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 45),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Close button
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo[600],
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 45),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Selesai',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                child: Text(
-                  'Selesai',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 

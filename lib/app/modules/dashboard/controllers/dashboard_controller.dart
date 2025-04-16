@@ -4,6 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:ujikom/app/data/get_attendance_response.dart';
 import 'package:ujikom/app/data/get_leave_response.dart';
+import 'package:ujikom/app/data/profile_response.dart';
 import 'package:ujikom/app/data/schedule_respones.dart';
 import 'package:ujikom/app/modules/dashboard/views/history_view.dart';
 import 'package:ujikom/app/modules/dashboard/views/index_view.dart';
@@ -20,13 +21,18 @@ class DashboardController extends GetxController {
   final schedule = Rxn<ScheduleResponse>();
   final get_leave = Rxn<get_leave_respones>();
   final get_attendance = Rxn<GetAttendanceResponse>();
+  final profile = Rxn<ProfileResponse>(); // Added missing profile variable
   final lastLeaveDate = ''.obs;
+  
+  // Loading states
+  final isLoading = true.obs;
+  final isRefreshing = false.obs;
 
-  // Storage for token
+  // Storage for token and user data
   final box = GetStorage();
 
-  // API Connection
-  final _getConnect = GetConnect();
+  // API Connection - with timeout
+  final _getConnect = GetConnect(timeout: const Duration(seconds: 10));
 
   // Pages used in bottom navigation
   final List<Widget> pages = [
@@ -46,13 +52,67 @@ class DashboardController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchSchedule();
-    fetchAttendance();
-    fetchLeave();
-    fetchAttendanceCount();
-    fetchLateCount();
-    fetchApprovedLeaveCount();
-    fetchApprovedSickCount();
+    // Fetch initial data using parallel requests
+    loadDashboardData();
+  }
+
+  // Load all dashboard data in parallel
+  Future<void> loadDashboardData() async {
+    isLoading.value = true;
+    
+    try {
+      // Get token once for all requests
+      final token = await getToken();
+      if (token == null) {
+        Get.offAllNamed('/login');
+        return;
+      }
+      
+      // Run API calls in parallel
+      await Future.wait([
+        fetchProfile(), // Added missing profile fetch
+        fetchSchedule(token),
+        fetchAttendanceData(token),
+        fetchLeaveData(token),
+      ]);
+    } catch (e) {
+      handleError('Gagal memuat data', e);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+  
+  // Refresh all data
+  Future<void> refreshData() async {
+    isRefreshing.value = true;
+    await loadDashboardData();
+    isRefreshing.value = false;
+  }
+
+  // Fetch attendance related data
+  Future<void> fetchAttendanceData(String token) async {
+    try {
+      await Future.wait([
+        fetchAttendance(token),
+        fetchAttendanceCount(token),
+        fetchLateCount(token),
+      ]);
+    } catch (e) {
+      handleError('Gagal memuat data kehadiran', e);
+    }
+  }
+  
+  // Fetch leave related data
+  Future<void> fetchLeaveData(String token) async {
+    try {
+      await Future.wait([
+        fetchLeave(token),
+        fetchApprovedLeaveCount(token),
+        fetchApprovedSickCount(token),
+      ]);
+    } catch (e) {
+      handleError('Gagal memuat data cuti', e);
+    }
   }
 
   // NAVIGATION & UI METHODS
@@ -65,8 +125,12 @@ class DashboardController extends GetxController {
 
   // Logout function
   void logout() {
-    GetStorage().erase();
-    Get.offAllNamed('/login');
+    try {
+      box.erase();
+      Get.offAllNamed('/login');
+    } catch (e) {
+      handleError('Gagal logout', e);
+    }
   }
 
   // FORMAT & DISPLAY METHODS
@@ -79,12 +143,12 @@ class DashboardController extends GetxController {
       children: [
         Icon(
           icon,
-          color: Color(0xFF4051B5),
+          color: const Color(0xFF4051B5),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Text(
           _getCategoryName(category),
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -116,19 +180,65 @@ class DashboardController extends GetxController {
 
   // Get token from storage
   Future<String?> getToken() async {
-    return await box.read('token');
+    try {
+      final token = box.read('token');
+      if (token == null) {
+        Get.snackbar(
+          'Sesi Berakhir',
+          'Silakan login kembali',
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+      }
+      return token;
+    } catch (e) {
+      handleError('Gagal mendapatkan token', e);
+      return null;
+    }
+  }
+
+  // Get user ID from storage
+  Future<int?> getUserId() async {
+    try {
+      return box.read('user_id');
+    } catch (e) {
+      handleError('Gagal mendapatkan ID pengguna', e);
+      return null;
+    }
   }
 
   // API CALLS
   //----------------------------------------
 
-  // Fetch schedule data from API
-  Future<void> fetchSchedule() async {
+  // Fetch profile data
+  Future<void> fetchProfile() async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
+      String? token = await getToken();
+      if (token == null) return;
+
+      final response = await _getConnect.get(
+        BaseUrl.profile,
+        headers: {'Authorization': "Bearer $token"},
+        contentType: "application/json",
+      );
+
+      if (response.statusCode == 200) {
+        profile.value = ProfileResponse.fromJson(response.body);
+      } else if (response.statusCode == 401) {
+        logout();
+      } else {
+        throw Exception("Gagal mengambil profil: ${response.statusText}");
       }
+    } catch (e) {
+      handleError("Gagal memuat profil", e);
+    }
+  }
+
+  // Fetch schedule data from API
+  Future<void> fetchSchedule([String? providedToken]) async {
+    try {
+      final token = providedToken ?? await getToken();
+      if (token == null) return;
 
       final response = await _getConnect.get(
         BaseUrl.schedule,
@@ -137,21 +247,21 @@ class DashboardController extends GetxController {
 
       if (response.statusCode == 200) {
         schedule.value = ScheduleResponse.fromJson(response.body);
+      } else if (response.statusCode == 401) {
+        logout();
       } else {
         throw Exception("Gagal mengambil jadwal: ${response.statusText}");
       }
     } catch (e) {
-      print("Error saat mengambil data jadwal: $e");
+      handleError("Gagal memuat jadwal", e);
     }
   }
 
   // Fetch attendance data from API
-  Future<void> fetchAttendance() async {
+  Future<void> fetchAttendance([String? providedToken]) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
-      }
+      final token = providedToken ?? await getToken();
+      if (token == null) return;
 
       final response = await _getConnect.get(
         BaseUrl.attendanceToday,
@@ -160,21 +270,21 @@ class DashboardController extends GetxController {
 
       if (response.statusCode == 200) {
         get_attendance.value = GetAttendanceResponse.fromJson(response.body);
+      } else if (response.statusCode == 401) {
+        logout();
       } else {
-        throw Exception("Gagal mengambil jadwal: ${response.statusText}");
+        throw Exception("Gagal mengambil data kehadiran: ${response.statusText}");
       }
     } catch (e) {
-      print("Error saat mengambil data jadwal: $e");
+      handleError("Gagal memuat data kehadiran", e);
     }
   }
 
   // Fetch leave data from API
-  Future<void> fetchLeave() async {
+  Future<void> fetchLeave([String? providedToken]) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
-      }
+      final token = providedToken ?? await getToken();
+      if (token == null) return;
 
       final response = await _getConnect.get(
         BaseUrl.leave,
@@ -184,21 +294,21 @@ class DashboardController extends GetxController {
       if (response.statusCode == 200) {
         get_leave.value = get_leave_respones.fromJson(response.body);
         _setLastLeaveDate();
+      } else if (response.statusCode == 401) {
+        logout();
       } else {
         throw Exception("Gagal mengambil data cuti: ${response.statusText}");
       }
     } catch (e) {
-      print("Error saat mengambil data cuti: $e");
+      handleError("Gagal memuat data cuti", e);
     }
   }
 
   // Fetch approved Attendance count from API
-  Future<void> fetchAttendanceCount() async {
+  Future<void> fetchAttendanceCount([String? providedToken]) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
-      }
+      final token = providedToken ?? await getToken();
+      if (token == null) return;
 
       final response = await _getConnect.get(
         BaseUrl.attendanceCount,
@@ -207,51 +317,46 @@ class DashboardController extends GetxController {
 
       if (response.statusCode == 200) {
         var data = response.body;
-        attendanceCount.value = data['count'];
+        attendanceCount.value = data['count'] ?? 0;
+      } else if (response.statusCode == 401) {
+        logout();
       } else {
         throw Exception("Gagal mengambil data absen: ${response.statusText}");
       }
     } catch (e) {
-      print("Error saat mengambil data absen: $e");
+      handleError("Gagal memuat jumlah kehadiran", e);
     }
   }
 
-// Try adding debug prints to check the API response
-  Future<void> fetchLateCount() async {
+  // Fetch late count from API
+  Future<void> fetchLateCount([String? providedToken]) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
-      }
+      final token = providedToken ?? await getToken();
+      if (token == null) return;
 
       final response = await _getConnect.get(
         BaseUrl.attendanceLateCount,
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      // Add these lines for debugging
-      print("Late count API response: ${response.body}");
-      print("Status code: ${response.statusCode}");
-
       if (response.statusCode == 200) {
         var data = response.body;
-        attendanceLateCount.value = data['count'];
-        print("Late count set to: ${attendanceLateCount.value}");
+        attendanceLateCount.value = data['count'] ?? 0;
+      } else if (response.statusCode == 401) {
+        logout();
       } else {
         throw Exception("Gagal mengambil data telat: ${response.statusText}");
       }
     } catch (e) {
-      print("Error saat mengambil data telat: $e");
+      handleError("Gagal memuat jumlah keterlambatan", e);
     }
   }
 
   // Fetch approved leave count from API
-  Future<void> fetchApprovedLeaveCount() async {
+  Future<void> fetchApprovedLeaveCount([String? providedToken]) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
-      }
+      final token = providedToken ?? await getToken();
+      if (token == null) return;
 
       final response = await _getConnect.get(
         BaseUrl.approvedLeaveCount,
@@ -260,22 +365,22 @@ class DashboardController extends GetxController {
 
       if (response.statusCode == 200) {
         var data = response.body;
-        approvedLeaveCount.value = data['count'];
+        approvedLeaveCount.value = data['count'] ?? 0;
+      } else if (response.statusCode == 401) {
+        logout();
       } else {
         throw Exception("Gagal mengambil data cuti: ${response.statusText}");
       }
     } catch (e) {
-      print("Error saat mengambil data cuti: $e");
+      handleError("Gagal memuat jumlah cuti disetujui", e);
     }
   }
 
   // Fetch approved sick count from API
-  Future<void> fetchApprovedSickCount() async {
+  Future<void> fetchApprovedSickCount([String? providedToken]) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
-      }
+      final token = providedToken ?? await getToken();
+      if (token == null) return;
 
       final response = await _getConnect.get(
         BaseUrl.approvedSickCount,
@@ -284,12 +389,14 @@ class DashboardController extends GetxController {
 
       if (response.statusCode == 200) {
         var data = response.body;
-        approvedSickCount.value = data['count'];
+        approvedSickCount.value = data['count'] ?? 0;
+      } else if (response.statusCode == 401) {
+        logout();
       } else {
-        throw Exception("Gagal mengambil data cuti: ${response.statusText}");
+        throw Exception("Gagal mengambil data cuti sakit: ${response.statusText}");
       }
     } catch (e) {
-      print("Error saat mengambil data cuti: $e");
+      handleError("Gagal memuat jumlah cuti sakit disetujui", e);
     }
   }
 
@@ -300,9 +407,12 @@ class DashboardController extends GetxController {
   Future<void> storeAttendance(String type) async {
     try {
       final token = await getToken();
-      if (token == null) {
-        throw Exception("Token tidak ditemukan, silakan login kembali.");
-      }
+      if (token == null) return;
+
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
 
       final response = await _getConnect.post(
         BaseUrl.storeAttendance,
@@ -312,18 +422,17 @@ class DashboardController extends GetxController {
         headers: {'Authorization': 'Bearer $token'},
       );
 
+      Get.back(); // Close loading dialog
+
       if (response.statusCode == 200) {
         await fetchAttendance(); // Refresh data kehadiran
         final message = type == 'in'
             ? 'Absen masuk berhasil dicatat'
             : 'Absen pulang berhasil dicatat';
-        Get.snackbar(
-          'Berhasil',
-          message,
-          backgroundColor: Colors.green[600],
-          colorText: Colors.white,
-          duration: Duration(seconds: 2),
-        );
+        
+        showSuccessMessage('Berhasil', message);
+      } else if (response.statusCode == 401) {
+        logout();
       } else {
         final errorMessage =
             type == 'in' ? 'Gagal absen masuk' : 'Gagal absen pulang';
@@ -332,14 +441,7 @@ class DashboardController extends GetxController {
     } catch (e) {
       final errorTitle =
           type == 'in' ? 'Gagal Absen Masuk' : 'Gagal Absen Pulang';
-      Get.snackbar(
-        errorTitle,
-        'Error: $e',
-        backgroundColor: Colors.red[600],
-        colorText: Colors.white,
-        duration: Duration(seconds: 3),
-      );
-      print("Error saat absen ${type == 'in' ? 'masuk' : 'pulang'}: $e");
+      handleError(errorTitle, e);
     }
   }
 
@@ -351,6 +453,34 @@ class DashboardController extends GetxController {
   // Helper method for clock out
   Future<void> clockOut() async {
     await storeAttendance('out');
+  }
+
+  // ERROR HANDLING & UI NOTIFICATIONS
+  //----------------------------------------
+  
+  // Display error message
+  void handleError(String title, dynamic error) {
+    print("$title: $error");
+    Get.snackbar(
+      title,
+      'Error: $error',
+      backgroundColor: Colors.red[600],
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+  
+  // Display success message
+  void showSuccessMessage(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      backgroundColor: Colors.green[600],
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   // HELPER METHODS

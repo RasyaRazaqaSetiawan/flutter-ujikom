@@ -12,96 +12,100 @@ class IndexView extends GetView<DashboardController> {
 
   @override
   Widget build(BuildContext context) {
-    // DashboardController controller = Get.put(DashboardController());
-    // final DashboardController controller = Get.find();
+    // Use more efficient Obx usage strategy
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Obx(() {
-          final name =
-              controller.schedule.value?.data?.employeeName ?? 'Pengguna';
-          return Text(
-            'Selamat Datang, $name',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-            ),
-          );
-        }),
-        backgroundColor: Colors.indigo[600],
-        elevation: 0,
-        actions: [
-          // IconButton(
-          //   icon: const Icon(
-          //     Icons.notifications_outlined,
-          //     color: Colors.white, // Set the icon color to white
-          //   ),
-          //   onPressed: () {
-          //     // Add notifications logic if needed
-          //   },
-          // ),
-          IconButton(
-            icon: const Icon(
-              Icons.logout_rounded,
-              color: Colors.white, // Set the icon color to white
-            ),
-            onPressed: () {
-              _showLogoutConfirmationDialog();
-            },
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(),
       body: Obx(() {
         // Check if data is still loading
-        if (controller.schedule.value == null ||
-            controller.get_attendance.value == null ||
-            controller.get_leave.value == null) {
-          return Container(
-            height: MediaQuery.of(context).size.height,
-            width: double.infinity,
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    color: Colors.indigo,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    "Memuat data...",
-                    style: TextStyle(
-                      color: Colors.indigo,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+        if (controller.isLoading.value) {
+          return _buildLoadingIndicator();
         }
 
         // If data is available, show the normal content
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildProfileCard(),
-              const SizedBox(height: 16),
-              _buildAttendanceCard(),
-              const SizedBox(height: 20),
-              _buildLeaveRequestCard(),
-              const SizedBox(height: 20),
-              _buildStatisticsSection(),
-              const SizedBox(height: 20),
-              _buildLeaveHistorySection(),
-              const SizedBox(height: 30),
-            ],
+        return _buildContent(context);
+      }),
+    );
+  }
+
+  // Extract app bar to dedicated method for cleaner code
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: Obx(() {
+        final name =
+            controller.schedule.value?.data?.employeeName ?? 'Pengguna';
+        return Text(
+          'Selamat Datang, $name',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         );
       }),
+      backgroundColor: Colors.indigo[600],
+      elevation: 0,
+      actions: [
+        IconButton(
+          icon: const Icon(
+            Icons.logout_rounded,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            _showLogoutConfirmationDialog();
+          },
+        ),
+      ],
+    );
+  }
+
+  // Loading indicator widget
+  Widget _buildLoadingIndicator() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: Colors.indigo,
+          ),
+          SizedBox(height: 16),
+          Text(
+            "Memuat data...",
+            style: TextStyle(
+              color: Colors.indigo,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Main content for the view
+  Widget _buildContent(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: controller.refreshData,
+      color: Colors.indigo,
+      child: SingleChildScrollView(
+        physics:
+            const AlwaysScrollableScrollPhysics(), // Enable refresh on pull
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildProfileCard(),
+            const SizedBox(height: 16),
+            _buildAttendanceCard(),
+            const SizedBox(height: 20),
+            _buildLeaveRequestCard(),
+            const SizedBox(height: 20),
+            _buildStatisticsSection(),
+            const SizedBox(height: 20),
+            _buildLeaveHistorySection(),
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
     );
   }
 
@@ -128,85 +132,101 @@ class IndexView extends GetView<DashboardController> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const CircleAvatar(
-              radius: 28,
-              backgroundColor: Colors.white,
-              child: Icon(
-                Icons.person,
-                size: 32,
-                color: Colors.indigo,
+          // Profile Image
+          Obx(() {
+            final profileImageUrl = controller.profile.value?.data?.profilePhoto;
+
+            return Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
               ),
-            ),
-          ),
+              child: CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.white,
+                backgroundImage:
+                    profileImageUrl != null && profileImageUrl.isNotEmpty
+                        ? NetworkImage(profileImageUrl)
+                        : null,
+                child: profileImageUrl == null || profileImageUrl.isEmpty
+                    ? const Icon(
+                        Icons.person,
+                        size: 32,
+                        color: Colors.indigo,
+                      )
+                    : null,
+              ),
+            );
+          }),
+
           const SizedBox(width: 15),
+
+          // Profile Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔹 Menampilkan Nama Karyawan
                 Obx(() {
-                  final employeeName =
+                  // Prioritize profile data over schedule data for name
+                  final employeeName = controller.profile.value?.data?.name ??
                       controller.schedule.value?.data?.employeeName ??
-                          'Nama Tidak Tersedia';
-                  return Text(
-                    employeeName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  );
-                }),
+                      'Nama Tidak Tersedia';
 
-                const SizedBox(height: 4),
-
-                // 🔹 Menampilkan Shift dengan Detail Waktu (Shift: 09:00 - 16:00)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Obx(() {
-                    final shiftName =
-                        controller.schedule.value?.data?.shift?.name ??
-                            'Shift Tidak Tersedia';
-                    final startTime =
-                        controller.schedule.value?.data?.shift?.startTime ??
-                            '00:00';
-                    final endTime =
-                        controller.schedule.value?.data?.shift?.endTime ??
-                            '00:00';
-                    return Text(
-                      '$shiftName (${DateFormat('HH:mm').format(DateTime.parse('2022-01-01 $startTime'))} - ${DateFormat('HH:mm').format(DateTime.parse('2022-01-01 $endTime'))})',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                    );
-                  }),
-                ),
-
-                const SizedBox(height: 4),
-
-                // 🔹 Menampilkan Kantor
-                Obx(() {
+                  final position =
+                      controller.profile.value?.data?.position ?? 'Staff';
+                  final shiftData = controller.schedule.value?.data?.shift;
+                  final shiftName = shiftData?.name ?? 'Shift Tidak Tersedia';
+                  final startTime = shiftData?.startTime ?? '00:00';
+                  final endTime = shiftData?.endTime ?? '00:00';
                   final officeName =
                       controller.schedule.value?.data?.office?.name ??
                           'Kantor Tidak Tersedia';
-                  return Text(
-                    'Kantor: $officeName',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                    ),
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        employeeName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        position,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$shiftName (${DateFormat('HH:mm').format(DateTime.parse('2022-01-01 $startTime'))} - ${DateFormat('HH:mm').format(DateTime.parse('2022-01-01 $endTime'))})',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Kantor: $officeName',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   );
                 }),
               ],
@@ -220,6 +240,7 @@ class IndexView extends GetView<DashboardController> {
   Widget _buildAttendanceCard() {
     String currentDate =
         DateFormat('EEE, dd MMM yyyy', 'id_ID').format(DateTime.now());
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -268,47 +289,13 @@ class IndexView extends GetView<DashboardController> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Obx(() {
-                    final isWfa = controller.schedule.value?.data?.isWfa;
-
-                    if (isWfa == 1) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green[600],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'WFA',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-                    } else if (isWfa == 0) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.amber[600],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'WFO',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-                    } else {
-                      return const SizedBox(); // Tidak tampil jika null
-                    }
-                  }),
+                  // More efficient Obx usage
+                  Obx(() => _buildWorkTypeIndicator(
+                      controller.schedule.value?.data?.isWfa == true
+                          ? 1
+                          : controller.schedule.value?.data?.isWfa == false
+                              ? 0
+                              : null)),
                 ],
               ),
             ],
@@ -317,13 +304,13 @@ class IndexView extends GetView<DashboardController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
+              // Combine check and build into one Obx for efficiency
               Obx(() {
                 final startTime =
                     controller.get_attendance.value?.data?.hariIni?.startTime;
                 final startTimeText = startTime != null && startTime.isNotEmpty
                     ? startTime
                     : '--:--';
-
                 return _buildTimeInfo(
                     'Datang', startTimeText, Icons.login_rounded, Colors.blue);
               }),
@@ -337,62 +324,92 @@ class IndexView extends GetView<DashboardController> {
                     controller.get_attendance.value?.data?.hariIni?.endTime;
                 final endTimeText =
                     endTime != null && endTime.isNotEmpty ? endTime : '--:--';
-
                 return _buildTimeInfo(
                     'Pulang', endTimeText, Icons.logout_rounded, Colors.orange);
               }),
             ],
           ),
           const SizedBox(height: 20),
-          Obx(() {
-            final hasStartTime =
-                controller.get_attendance.value?.data?.hariIni?.startTime !=
-                        null &&
-                    controller.get_attendance.value!.data!.hariIni!.startTime!
-                        .isNotEmpty;
-            final hasEndTime =
-                controller.get_attendance.value?.data?.hariIni?.endTime !=
-                        null &&
-                    controller.get_attendance.value!.data!.hariIni!.endTime!
-                        .isNotEmpty;
-
-            // Bungkus dengan GestureDetector untuk mendeteksi ketukan pada tombol yang dinonaktifkan
-            return GestureDetector(
-              onTap: hasEndTime ? showAttendanceCompletedInfo : null,
-              child: ElevatedButton.icon(
-                // Dinonaktifkan jika kehadiran sudah selesai (hasEndTime = true)
-                onPressed: hasEndTime
-                    ? null
-                    : () {
-                        // Navigasi ke AttendancesView
-                        Get.to(() => const AttendancesView());
-                      },
-                icon: hasEndTime
-                    ? const Icon(Icons.check_circle_outline)
-                    : Icon(hasStartTime ? Icons.logout : Icons.fingerprint),
-                label: Text(hasEndTime
-                    ? 'Kehadiran Selesai'
-                    : (hasStartTime ? 'Pulang' : 'Buat Kehadiran')),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: hasEndTime
-                      ? Colors.green[600]
-                      : (hasStartTime
-                          ? Colors.orange[600]
-                          : Colors.indigo[600]),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                  // Tambahkan opacity pada tombol jika kehadiran sudah selesai
-                  disabledBackgroundColor: Colors.green[600]?.withOpacity(0.7),
-                  disabledForegroundColor: Colors.white.withOpacity(0.8),
-                ),
-              ),
-            );
-          }),
+          Obx(() => _buildAttendanceButton()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWorkTypeIndicator(int? isWfa) {
+    if (isWfa == 1) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green[600],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'WFA',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else if (isWfa == 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.amber[600],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'WFO',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    } else {
+      return const SizedBox();
+    }
+  }
+
+  Widget _buildAttendanceButton() {
+    final hasStartTime =
+        controller.get_attendance.value?.data?.hariIni?.startTime != null &&
+            controller
+                .get_attendance.value!.data!.hariIni!.startTime!.isNotEmpty;
+    final hasEndTime =
+        controller.get_attendance.value?.data?.hariIni?.endTime != null &&
+            controller.get_attendance.value!.data!.hariIni!.endTime!.isNotEmpty;
+
+    return GestureDetector(
+      onTap: hasEndTime ? showAttendanceCompletedInfo : null,
+      child: ElevatedButton.icon(
+        onPressed: hasEndTime
+            ? null
+            : () {
+                Get.to(() => const AttendancesView());
+              },
+        icon: hasEndTime
+            ? const Icon(Icons.check_circle_outline)
+            : Icon(hasStartTime ? Icons.logout : Icons.fingerprint),
+        label: Text(hasEndTime
+            ? 'Kehadiran Selesai'
+            : (hasStartTime ? 'Pulang' : 'Buat Kehadiran')),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: hasEndTime
+              ? Colors.green[600]
+              : (hasStartTime ? Colors.orange[600] : Colors.indigo[600]),
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+          disabledBackgroundColor: Colors.green[600]?.withOpacity(0.7),
+          disabledForegroundColor: Colors.white.withOpacity(0.8),
+        ),
       ),
     );
   }
@@ -416,44 +433,13 @@ class IndexView extends GetView<DashboardController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Pengajuan Cuti',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
-              ),
-              // Container(
-              //   padding:
-              //       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              //   decoration: BoxDecoration(
-              //     color: Colors.purple[50],
-              //     borderRadius: BorderRadius.circular(12),
-              //   ),
-              //   child: Row(
-              //     children: [
-              //       Icon(
-              //         Icons.calendar_today_rounded,
-              //         size: 12,
-              //         color: Colors.purple[700],
-              //       ),
-              //       const SizedBox(width: 4),
-              //       Text(
-              //         'Sisa Cuti: 12',
-              //         style: TextStyle(
-              //           color: Colors.purple[700],
-              //           fontSize: 12,
-              //           fontWeight: FontWeight.w500,
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
-            ],
+          Text(
+            'Pengajuan Cuti',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -491,7 +477,6 @@ class IndexView extends GetView<DashboardController> {
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () {
-              // _showLeaveRequestDialog();
               Get.to(() => const LeaveView());
             },
             icon: const Icon(Icons.event_available_rounded),
@@ -511,99 +496,177 @@ class IndexView extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildLeaveHistorySection() {
-    // Cek apakah data leave sudah tersedia
-    if (controller.get_leave.value == null) {
-      return Container(
-        height: 200,
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 6,
-              offset: const Offset(0, 3),
+  Widget _buildStatisticsSection() {
+    // Use one Obx for the entire section to reduce rebuilds
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Statistik Bulan Ini',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
             ),
-          ],
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Colors.indigo,
           ),
         ),
-      );
-    }
-
-    final leaveHistory = controller.get_leave.value?.data ?? [];
-
-    // Cek jika data cuti kosong
-    if (leaveHistory.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 140,
+          child: Obx(() {
+            return ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              physics: const BouncingScrollPhysics(),
               children: [
-                Text(
-                  'Riwayat Cuti',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
-                ),
+                _buildStatisticCard(
+                    'Tepat Waktu',
+                    '${controller.attendanceCount.value}',
+                    Icons.check_circle_outline,
+                    Colors.green),
+                _buildStatisticCard(
+                    'Terlambat',
+                    '${controller.attendanceLateCount.value}',
+                    Icons.access_time,
+                    Colors.orange),
+                _buildStatisticCard(
+                    'Izin/Cuti',
+                    '${controller.approvedLeaveCount.value}',
+                    Icons.event_note,
+                    Colors.blue),
+                _buildStatisticCard(
+                    'Sakit',
+                    '${controller.approvedSickCount.value}',
+                    Icons.healing,
+                    Colors.red[400]!),
               ],
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLeaveHistorySection() {
+    return Obx(() {
+      // Cek apakah data leave sudah tersedia atau masih loading
+      if (controller.isLoading.value || controller.get_leave.value == null) {
+        return _buildLeaveHistorySkeleton();
+      }
+
+      final leaveHistory = controller.get_leave.value?.data ?? [];
+
+      // Cek jika data cuti kosong
+      if (leaveHistory.isEmpty) {
+        return _buildEmptyLeaveHistory();
+      }
+
+      // Batasi hanya 3 data yang ditampilkan
+      final limitedLeaveHistory = leaveHistory.take(3).toList();
+      return _buildLeaveHistoryContent(limitedLeaveHistory);
+    });
+  }
+
+  Widget _buildLeaveHistorySkeleton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Riwayat Cuti',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
             ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(vertical: 30),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.event_busy,
-                    size: 40,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Tidak ada data cuti',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 200,
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 6,
+                offset: const Offset(0, 3),
               ),
+            ],
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: Colors.indigo,
             ),
           ),
-        ],
-      );
-    }
+        ),
+      ],
+    );
+  }
 
-    // Batasi hanya 3 data yang ditampilkan
-    final limitedLeaveHistory = leaveHistory.take(3).toList();
+  Widget _buildEmptyLeaveHistory() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Riwayat Cuti',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.event_busy,
+                  size: 40,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Tidak ada data cuti',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildLeaveHistoryContent(List leaveHistory) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -656,94 +719,97 @@ class IndexView extends GetView<DashboardController> {
             child: ListView.separated(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: limitedLeaveHistory.length,
+              itemCount: leaveHistory.length,
               separatorBuilder: (context, index) => Divider(
                 height: 1,
                 color: Colors.grey[200],
               ),
               itemBuilder: (context, index) {
-                final leave = limitedLeaveHistory[index];
-                final category =
-                    leave.categoriesLeave ?? 'Cuti Tidak Diketahui';
-
-                // Menentukan warna status berdasarkan status cuti
-                Color statusColor;
-                String statusText;
-
-                switch (leave.status) {
-                  case 'approved':
-                    statusColor = Colors.green;
-                    statusText = 'Disetujui';
-                    break;
-                  case 'rejected':
-                    statusColor = Colors.red;
-                    statusText = 'Ditolak';
-                    break;
-                  case 'pending':
-                  default:
-                    statusColor = Colors.amber;
-                    statusText = 'Pending';
-                    break;
-                }
-
-                // Mengambil ikon kategori dari controller
-                final IconData categoryIcon =
-                    controller.categoryIcons[category] ?? Icons.event_note;
-
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: Icon(
-                    categoryIcon,
-                    color: Color(0xFF4051B5),
-                    size: 24,
-                  ),
-                  title: Text(
-                    controller.formatCategory(category),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(
-                        '${leave.formattedDates ?? 'Tanggal Tidak Tersedia'} (${leave.days ?? 0} hari)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: statusColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                );
+                final leave = leaveHistory[index];
+                return _buildLeaveHistoryItem(leave);
               },
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLeaveHistoryItem(dynamic leave) {
+    final category = leave.categoriesLeave ?? 'Cuti Tidak Diketahui';
+
+    // Menentukan warna status berdasarkan status cuti
+    Color statusColor;
+    String statusText;
+
+    switch (leave.status) {
+      case 'approved':
+        statusColor = Colors.green;
+        statusText = 'Disetujui';
+        break;
+      case 'rejected':
+        statusColor = Colors.red;
+        statusText = 'Ditolak';
+        break;
+      case 'pending':
+      default:
+        statusColor = Colors.amber;
+        statusText = 'Pending';
+        break;
+    }
+
+    // Mengambil ikon kategori dari controller
+    final IconData categoryIcon =
+        controller.categoryIcons[category] ?? Icons.event_note;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
+      leading: Icon(
+        categoryIcon,
+        color: const Color(0xFF4051B5),
+        size: 24,
+      ),
+      title: Text(
+        controller.formatCategory(category),
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          Text(
+            '${leave.formattedDates ?? 'Tanggal Tidak Tersedia'} (${leave.days ?? 0} hari)',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+            ),
+          ),
+        ],
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 5,
+        ),
+        decoration: BoxDecoration(
+          color: statusColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          statusText,
+          style: TextStyle(
+            fontSize: 12,
+            color: statusColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 
@@ -784,54 +850,6 @@ class IndexView extends GetView<DashboardController> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatisticsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            'Statistik Bulan Ini',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 140,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _buildStatisticCard(
-                  'Tepat Waktu', '${controller.attendanceCount.value}', Icons.check_circle_outline, Colors.green),
-              _buildStatisticCard(
-                  'Terlambat', '${controller.attendanceLateCount.value}', Icons.access_time, Colors.orange),
-              Obx(() {
-                return _buildStatisticCard(
-                    'Izin/Cuti',
-                    '${controller.approvedLeaveCount.value}', // Menggunakan Obx agar count bisa ter-update
-                    Icons.event_note,
-                    Colors.blue);
-              }),
-              Obx(() {
-                return _buildStatisticCard(
-                    'Sakit',
-                    '${controller.approvedSickCount.value}',
-                    Icons.healing,
-                    Colors.red[400]!);
-              }),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -897,11 +915,11 @@ class IndexView extends GetView<DashboardController> {
         title: Row(
           children: [
             Icon(Icons.info_outline, color: Colors.blue[600]),
-            SizedBox(width: 10),
-            Text('Informasi Kehadiran'),
+            const SizedBox(width: 10),
+            const Text('Informasi Kehadiran'),
           ],
         ),
-        content: Text(
+        content: const Text(
           'Absensi hari ini sudah selesai. Anda dapat melakukan absensi kembali pada hari kerja berikutnya.',
           style: TextStyle(fontSize: 16),
         ),
