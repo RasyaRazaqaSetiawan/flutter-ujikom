@@ -241,7 +241,7 @@ class DashboardController extends GetxController {
       if (token == null) return;
 
       final response = await _getConnect.get(
-        BaseUrl.schedule,
+        BaseUrl.attendanceSchedule,
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -287,7 +287,7 @@ class DashboardController extends GetxController {
       if (token == null) return;
 
       final response = await _getConnect.get(
-        BaseUrl.leave,
+        BaseUrl.leaves,
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -311,7 +311,7 @@ class DashboardController extends GetxController {
       if (token == null) return;
 
       final response = await _getConnect.get(
-        BaseUrl.attendanceCount,
+        BaseUrl.attendanceOnTimeCount,
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -359,7 +359,7 @@ class DashboardController extends GetxController {
       if (token == null) return;
 
       final response = await _getConnect.get(
-        BaseUrl.approvedLeaveCount,
+        BaseUrl.approvedLeavesCount,
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -383,7 +383,7 @@ class DashboardController extends GetxController {
       if (token == null) return;
 
       final response = await _getConnect.get(
-        BaseUrl.approvedSickCount,
+        BaseUrl.sickLeaveCount,
         headers: {'Authorization': 'Bearer $token'},
       );
 

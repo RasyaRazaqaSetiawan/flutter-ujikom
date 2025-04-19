@@ -1,11 +1,11 @@
-class AttendanceResponse {
+class StoreAttendanceResponse {
   String? status;
   String? message;
   Data? data;
 
-  AttendanceResponse({this.status, this.message, this.data});
+  StoreAttendanceResponse({this.status, this.message, this.data});
 
-  AttendanceResponse.fromJson(Map<String, dynamic> json) {
+  StoreAttendanceResponse.fromJson(Map<String, dynamic> json) {
     status = json['status'];
     message = json['message'];
     data = json['data'] != null ? new Data.fromJson(json['data']) : null;
@@ -62,8 +62,8 @@ class Absensi {
   String? status;
   String? checkInPhoto;
   String? checkOutPhoto;
-  String? checkoutLatitude;
-  String? checkoutLongitude;
+  double? checkoutLatitude; 
+  double? checkoutLongitude;
   String? checkoutStatus;
   String? createdAt;
   String? updatedAt;
@@ -89,23 +89,39 @@ class Absensi {
       this.createdAt,
       this.updatedAt});
 
+  // Helper function to safely parse double values
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        print('Error parsing double value: $value - $e');
+        return null;
+      }
+    }
+    return null;
+  }
+
   Absensi.fromJson(Map<String, dynamic> json) {
     id = json['id'];
     userId = json['user_id'];
     date = json['date'];
-    scheduleLatitude = json['schedule_latitude'];
-    scheduleLongitude = json['schedule_longitude'];
+    scheduleLatitude = _parseDouble(json['schedule_latitude']);
+    scheduleLongitude = _parseDouble(json['schedule_longitude']);
     scheduleStartTime = json['schedule_start_time'];
     scheduleEndTime = json['schedule_end_time'];
-    latitude = json['latitude'];
-    longitude = json['longitude'];
+    latitude = _parseDouble(json['latitude']);
+    longitude = _parseDouble(json['longitude']);
     startTime = json['start_time'];
     endTime = json['end_time'];
     status = json['status'];
     checkInPhoto = json['check_in_photo'];
     checkOutPhoto = json['check_out_photo'];
-    checkoutLatitude = json['checkout_latitude'];
-    checkoutLongitude = json['checkout_longitude'];
+    checkoutLatitude = _parseDouble(json['checkout_latitude']);
+    checkoutLongitude = _parseDouble(json['checkout_longitude']);
     checkoutStatus = json['checkout_status'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];

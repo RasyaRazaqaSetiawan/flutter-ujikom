@@ -226,7 +226,10 @@ class ProfileView extends GetView<ProfileController> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              user?.position ?? 'Posisi Tidak Tersedia',
+              // Modified this line to handle List<String>? roles
+              (user?.roles != null && user.roles.isNotEmpty)
+                  ? user.roles.join(', ')
+                  : 'Posisi Tidak Tersedia',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,

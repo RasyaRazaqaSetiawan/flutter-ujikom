@@ -134,7 +134,8 @@ class IndexView extends GetView<DashboardController> {
         children: [
           // Profile Image
           Obx(() {
-            final profileImageUrl = controller.profile.value?.data?.profilePhoto;
+            final profileImageUrl =
+                controller.profile.value?.data?.profilePhoto;
 
             return Container(
               padding: const EdgeInsets.all(3),
@@ -173,8 +174,13 @@ class IndexView extends GetView<DashboardController> {
                       controller.schedule.value?.data?.employeeName ??
                       'Nama Tidak Tersedia';
 
-                  final position =
-                      controller.profile.value?.data?.position ?? 'Staff';
+                  // Modified part: Handle roles as a List<String>?
+                  final rolesList = controller.profile.value?.data?.roles;
+                  final rolesText = (rolesList != null && rolesList.isNotEmpty)
+                      ? rolesList
+                          .join(', ') // Join with comma if multiple roles
+                      : 'Staff'; // Default value if null or empty
+
                   final shiftData = controller.schedule.value?.data?.shift;
                   final shiftName = shiftData?.name ?? 'Shift Tidak Tersedia';
                   final startTime = shiftData?.startTime ?? '00:00';
@@ -196,7 +202,7 @@ class IndexView extends GetView<DashboardController> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        position,
+                        rolesText, // Use the joined roles string
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 14,

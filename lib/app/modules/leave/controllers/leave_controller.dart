@@ -68,7 +68,7 @@ class LeaveController extends GetxController {
       }
 
       final response = await _getConnect.get(
-        BaseUrl.leave, // Pastikan endpoint yang benar
+        BaseUrl.leaves, // Pastikan endpoint yang benar
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -117,7 +117,7 @@ class LeaveController extends GetxController {
       }
 
       final response = await _getConnect.get(
-        BaseUrl.schedule,
+        BaseUrl.attendanceSchedule,
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
