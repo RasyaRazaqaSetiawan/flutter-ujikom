@@ -159,6 +159,10 @@ class BulanIni {
   String? fotoPulang;
   String? kantor;
   String? shift;
+  double? latitude;
+  double? longitude;
+  double? checkoutLatitude;
+  double? checkoutLongitude;
 
   BulanIni(
       {this.tanggal,
@@ -169,7 +173,11 @@ class BulanIni {
       this.fotoMasuk,
       this.fotoPulang,
       this.kantor,
-      this.shift});
+      this.shift,
+      this.latitude,
+      this.longitude,
+      this.checkoutLatitude,
+      this.checkoutLongitude});
 
   BulanIni.fromJson(Map<String, dynamic> json) {
     tanggal = json['tanggal'];
@@ -181,6 +189,10 @@ class BulanIni {
     fotoPulang = json['foto_pulang'];
     kantor = json['kantor'];
     shift = json['shift'];
+    latitude = json['latitude'];
+    longitude = json['longitude'];
+    checkoutLatitude = json['checkout_latitude'];
+    checkoutLongitude = json['checkout_longitude'];
   }
 
   Map<String, dynamic> toJson() {
@@ -194,6 +206,10 @@ class BulanIni {
     data['foto_pulang'] = this.fotoPulang;
     data['kantor'] = this.kantor;
     data['shift'] = this.shift;
+    data['latitude'] = this.latitude;
+    data['longitude'] = this.longitude;
+    data['checkout_latitude'] = this.checkoutLatitude;
+    data['checkout_longitude'] = this.checkoutLongitude;
     return data;
   }
 }

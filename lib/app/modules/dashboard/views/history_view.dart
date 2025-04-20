@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ujikom/app/modules/history/controllers/history_controller.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 
 class HistoryView extends GetView<HistoryController> {
   const HistoryView({Key? key}) : super(key: key);
@@ -40,19 +41,26 @@ class HistoryView extends GetView<HistoryController> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildCalendarHeader(context),
-              const SizedBox(height: 16),
-              _buildDateSelection(context),
-              const SizedBox(height: 24),
-              _buildAttendanceHistory(),
-              // Spacer for bottom padding
-              const SizedBox(height: 24),
-            ],
+        child: RefreshIndicator(
+          onRefresh: () => controller.refreshData(),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCalendarHeader(context),
+                const SizedBox(height: 16),
+                _buildDateSelection(context),
+                const SizedBox(height: 24),
+                _buildTabs(),
+                const SizedBox(height: 16),
+                Obx(() => controller.selectedTabIndex.value == 0
+                    ? _buildAttendanceHistory()
+                    : _buildLeaveHistory()),
+                // Spacer for bottom padding
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
@@ -123,7 +131,6 @@ class HistoryView extends GetView<HistoryController> {
   }
 
   Widget _buildDateSelection(BuildContext context) {
-    // Days of the week labels with abbreviated format
     final daysOfWeek = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
 
     return Container(
@@ -159,13 +166,11 @@ class HistoryView extends GetView<HistoryController> {
                 ),
                 Row(
                   children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        controller.previousMonth();
-                      },
-                      icon: Container(
+                    // Previous month button
+                    InkWell(
+                      onTap: () => controller.previousMonth(),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
@@ -179,13 +184,11 @@ class HistoryView extends GetView<HistoryController> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        controller.nextMonth();
-                      },
-                      icon: Container(
+                    // Next month button
+                    InkWell(
+                      onTap: () => controller.nextMonth(),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
@@ -228,8 +231,11 @@ class HistoryView extends GetView<HistoryController> {
 
           const SizedBox(height: 12),
 
-          // Date grid - dynamically generated based on controller data
-          Obx(() => GridView.builder(
+          // Date grid with specific ID for targeted updates
+          GetBuilder<HistoryController>(
+            id: 'calendar-grid',
+            builder: (ctrl) {
+              return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding:
@@ -240,33 +246,20 @@ class HistoryView extends GetView<HistoryController> {
                   mainAxisSpacing: 6,
                   crossAxisSpacing: 6,
                 ),
-                itemCount: controller.displayedDates.length,
+                itemCount: ctrl.displayedDates.length,
                 itemBuilder: (context, index) {
-                  final date = controller.displayedDates[index];
+                  final date = ctrl.displayedDates[index];
                   final isSelected =
-                      controller.selectedDateIndex.value == index;
-                  final isCurrentMonth = controller.isInCurrentMonth(date);
-                  final isToday = controller.isSameDay(date, DateTime.now());
+                      ctrl.isSameDay(date, ctrl.selectedDate.value);
+                  final isCurrentMonth = ctrl.isInCurrentMonth(date);
+                  final isToday = ctrl.isSameDay(date, DateTime.now());
 
-                  // Tambahkan Material widget untuk efek ripple saat diklik
                   return Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () {
-                        if (isCurrentMonth) {
-                          controller.selectedDateIndex.value =
-                              index; // Pertama, update indeks
-                          controller.selectDate(date); // Kemudian select date
-
-                          // Force UI refresh dengan cara:
-                          controller.update(); // Tambahkan ini untuk memaksa pembaruan UI
-
-                          print(
-                              "Tanggal diklik: ${date.day}/${date.month}/${date.year}");
-                        }
-                      },
-                      borderRadius:
-                          BorderRadius.circular(50), // Circular border
+                      onTap:
+                          isCurrentMonth ? () => ctrl.selectDate(date) : null,
+                      borderRadius: BorderRadius.circular(50),
                       splashColor: Colors.indigo.withOpacity(0.3),
                       child: Container(
                         width: 28,
@@ -310,7 +303,9 @@ class HistoryView extends GetView<HistoryController> {
                     ),
                   );
                 },
-              )),
+              );
+            },
+          ),
 
           const SizedBox(height: 16),
         ],
@@ -318,52 +313,379 @@ class HistoryView extends GetView<HistoryController> {
     );
   }
 
-  Widget _buildAttendanceHistory() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            'Detail Kehadiran',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
-            ),
+  // Build tabs for switching between attendance and leave history
+  Widget _buildTabs() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(height: 12),
-
-        // Absensi Datang Card (dummy data)
-        _buildAttendanceCard(
-          title: 'Absensi Datang',
-          time: '14:53:56',
-          date: '25-03-2025',
-          location: 'Kantor',
-          status: 'WFA',
-          latitude: '106.8450:38',
-          longitude: '-6.2143513',
-          isEntry: true,
-        ),
-
-        const SizedBox(height: 16),
-
-        // Absensi Pulang Card (dummy data)
-        _buildAttendanceCard(
-          title: 'Absensi Pulang',
-          time: '16:45:11',
-          date: '25-03-2025',
-          location: 'Kantor',
-          status: 'WFA',
-          latitude: '106.845038',
-          longitude: '-6.2143513',
-          isEntry: false,
-        ),
-      ],
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Obx(() => Row(
+              children: [
+                _buildTabButton(
+                  title: 'Kehadiran',
+                  icon: Icons.calendar_today_outlined,
+                  isSelected: controller.selectedTabIndex.value == 0,
+                  onTap: () => controller.changeTab(0),
+                ),
+                _buildTabButton(
+                  title: 'Cuti',
+                  icon: Icons.beach_access_outlined,
+                  isSelected: controller.selectedTabIndex.value == 1,
+                  onTap: () => controller.changeTab(1),
+                ),
+              ],
+            )),
+      ),
     );
   }
 
+  // Individual tab button
+  Widget _buildTabButton({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.indigo[600] : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : Colors.grey[600],
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  color: isSelected ? Colors.white : Colors.grey[600],
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Build attendance history section
+  Widget _buildAttendanceHistory() {
+    return GetBuilder<HistoryController>(
+      id: 'attendance-data',
+      builder: (ctrl) {
+        if (ctrl.isLoadingAttendance.value) {
+          return _buildLoadingState("Memuat data kehadiran...");
+        }
+
+        if (ctrl.hasAttendanceError.value) {
+          return _buildErrorState(
+            ctrl.attendanceErrorMsg.value,
+            onRetry: () => ctrl.fetchAttendanceData(),
+          );
+        }
+
+        if (ctrl.filteredAttendance.isEmpty) {
+          return _buildEmptyState(
+              "Tidak ada data kehadiran pada tanggal tersebut");
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Detail Kehadiran',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Dynamically show check-in/check-out cards
+            ...ctrl.filteredAttendance.map((attendance) {
+              // Check if there's check-in data
+              if (attendance.jamMasuk != null &&
+                  attendance.jamMasuk!.isNotEmpty &&
+                  attendance.jamMasuk != "-") {
+                return Column(
+                  children: [
+                    _buildAttendanceCard(
+                      title: 'Absensi Datang',
+                      time: attendance.jamMasuk ?? '-',
+                      date: _formatDate(attendance.tanggal),
+                      location: attendance.kantor ?? 'Tidak tercatat',
+                      status: attendance.statusMasuk ?? 'Tidak diketahui',
+                      latitude: attendance.latitude.toString(),
+                      longitude: attendance.longitude.toString(),
+                      isEntry: true,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            }).toList(),
+
+            // Check-out cards
+            ...ctrl.filteredAttendance.map((attendance) {
+              // Check if there's check-out data
+              if (attendance.jamPulang != null &&
+                  attendance.jamPulang!.isNotEmpty &&
+                  attendance.jamPulang != "-") {
+                return Column(
+                  children: [
+                    _buildAttendanceCard(
+                      title: 'Absensi Pulang',
+                      time: attendance.jamPulang ?? '-',
+                      date: _formatDate(attendance.tanggal),
+                      location: attendance.kantor ?? 'Tidak tercatat',
+                      status: attendance.statusPulang ?? 'Tidak diketahui',
+                      latitude: attendance.checkoutLatitude.toString(),
+                      longitude: attendance.checkoutLongitude.toString(),
+                      isEntry: false,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            }).toList(),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper to format dates consistently
+  String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '-';
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('dd-MM-yyyy').format(date);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  // Build leave history section
+  Widget _buildLeaveHistory() {
+    return GetBuilder<HistoryController>(
+      id: 'leave-data',
+      builder: (ctrl) {
+        if (ctrl.isLoadingLeave.value) {
+          return _buildLoadingState("Memuat data cuti...");
+        }
+
+        if (ctrl.hasLeaveError.value) {
+          return _buildErrorState(
+            ctrl.leaveErrorMsg.value,
+            onRetry: () => ctrl.fetchLeaveData(),
+          );
+        }
+
+        if (ctrl.filteredLeaves.isEmpty) {
+          return _buildEmptyState("Tidak ada data cuti pada tanggal tersebut");
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Detail Cuti',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Leave cards
+            ...ctrl.filteredLeaves
+                .map((leave) => Column(
+                      children: [
+                        _buildLeaveCard(leave),
+                        const SizedBox(height: 16),
+                      ],
+                    ))
+                .toList(),
+          ],
+        );
+      },
+    );
+  }
+
+  // Build leave card
+  Widget _buildLeaveCard(leave) {
+    final statusColor = controller.getLeaveStatusColor(leave.status);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: statusColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.event_note_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      controller.formatLeaveCategory(leave.categoriesLeave),
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    leave.status ?? 'Unknown',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Information Section
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Date range
+                _buildInfoRow(
+                  Icons.date_range_rounded,
+                  "${_formatDate(leave.startDate)} - ${_formatDate(leave.endDate)}",
+                  statusColor,
+                ),
+                const SizedBox(height: 12),
+
+                // Duration
+                _buildInfoRow(
+                  Icons.timer_outlined,
+                  "${leave.days} hari",
+                  statusColor,
+                ),
+                const SizedBox(height: 12),
+
+                // Office
+                _buildInfoRow(
+                  Icons.business_outlined,
+                  leave.scheduleOffice ?? "Tidak tercatat",
+                  statusColor,
+                ),
+                const SizedBox(height: 16),
+
+                // Reason section
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Alasan:",
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        leave.reason ?? "Tidak ada alasan",
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build attendance card
   Widget _buildAttendanceCard({
     required String title,
     required String time,
@@ -372,10 +694,12 @@ class HistoryView extends GetView<HistoryController> {
     required String status,
     required String latitude,
     required String longitude,
-    required bool isEntry,
+    required bool isEntry, // true for check-in, false for check-out
   }) {
-    final cardColor = isEntry ? Colors.blue[500] : Colors.red[500];
-    final cardLightColor = isEntry ? Colors.blue[50] : Colors.red[50];
+    final Color cardColor = isEntry
+        ? Colors.blue
+        : Colors.red; // Blue for check-in, red for check-out
+    final Color cardLightColor = cardColor.withOpacity(0.1);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -446,13 +770,13 @@ class HistoryView extends GetView<HistoryController> {
                 _buildInfoRow(
                   Icons.calendar_today_rounded,
                   date,
-                  cardColor!,
+                  cardColor,
                 ),
                 const SizedBox(height: 12),
 
                 // Location
                 _buildInfoRow(
-                  Icons.location_on_outlined,
+                  Icons.business,
                   location,
                   cardColor,
                 ),
@@ -520,10 +844,153 @@ class HistoryView extends GetView<HistoryController> {
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Loading state widget
+  Widget _buildLoadingState(String message) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Error state widget
+  Widget _buildErrorState(String errorMessage,
+      {required VoidCallback onRetry}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            color: Colors.red[400],
+            size: 48,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Terjadi Kesalahan',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            errorMessage,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Coba Lagi'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo[600],
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Empty state widget
+  Widget _buildEmptyState(String message) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.event_busy_rounded,
+            color: Colors.grey[400],
+            size: 48,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Tidak Ada Data',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -568,20 +1035,18 @@ class HistoryView extends GetView<HistoryController> {
       'Desember'
     ];
 
-    // Create temporary values that don't use .obs inside the dialog
-    // This is key to fixing the GetX reactivity error
-    int tempSelectedYear = controller.focusedDate.value.year;
-    int tempSelectedMonth = controller.focusedDate.value.month;
+    // Inisialisasi nilai temporer di controller
+    controller.initTempDate();
 
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) =>
-          StatefulBuilder(builder: (context, setState) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
+    // Tambahkan ID unik untuk dialog
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: GetBuilder<HistoryController>(
+          id: 'month-year-picker',
+          builder: (ctrl) => Container(
             padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -596,7 +1061,7 @@ class HistoryView extends GetView<HistoryController> {
                 ),
                 const SizedBox(height: 20),
 
-                // Year selection
+                // Year selection dengan GetBuilder
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[100],
@@ -605,7 +1070,7 @@ class HistoryView extends GetView<HistoryController> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: DropdownButton<int>(
-                    value: tempSelectedYear,
+                    value: ctrl.tempYear.value,
                     isExpanded: true,
                     underline: const SizedBox(),
                     icon: Icon(Icons.arrow_drop_down, color: Colors.grey[700]),
@@ -623,9 +1088,9 @@ class HistoryView extends GetView<HistoryController> {
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) {
-                        setState(() {
-                          tempSelectedYear = value;
-                        });
+                        ctrl.updateTempYear(value);
+                        // Update UI segera
+                        ctrl.update(['month-year-picker']);
                       }
                     },
                   ),
@@ -633,7 +1098,7 @@ class HistoryView extends GetView<HistoryController> {
 
                 const SizedBox(height: 16),
 
-                // Month grid
+                // Month grid dengan GetBuilder
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -647,14 +1112,15 @@ class HistoryView extends GetView<HistoryController> {
                   itemBuilder: (context, index) {
                     // Month index is 0-based in array but 1-based in DateTime
                     final monthNumber = index + 1;
-                    final isSelected = monthNumber == tempSelectedMonth;
+                    final isSelected = monthNumber == ctrl.tempMonth.value;
 
-                    return GestureDetector(
+                    return InkWell(
                       onTap: () {
-                        setState(() {
-                          tempSelectedMonth = monthNumber;
-                        });
+                        ctrl.updateTempMonth(monthNumber);
+                        // Update UI segera
+                        ctrl.update(['month-year-picker']);
                       },
+                      borderRadius: BorderRadius.circular(8),
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected
@@ -684,9 +1150,9 @@ class HistoryView extends GetView<HistoryController> {
                 ElevatedButton(
                   onPressed: () {
                     // Apply the selected month and year
-                    controller.setMonthYear(
-                        tempSelectedMonth, tempSelectedYear);
-                    Navigator.pop(context);
+                    ctrl.setMonthYear(
+                        ctrl.tempMonth.value, ctrl.tempYear.value);
+                    Get.back();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo[600],
@@ -706,8 +1172,8 @@ class HistoryView extends GetView<HistoryController> {
               ],
             ),
           ),
-        );
-      }),
+        ),
+      ),
     );
   }
 
