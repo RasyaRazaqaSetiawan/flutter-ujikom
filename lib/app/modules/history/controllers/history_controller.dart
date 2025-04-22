@@ -40,13 +40,13 @@ class HistoryController extends GetxController {
   final RxBool hasLeaveError = false.obs;
   final RxString leaveErrorMsg = ''.obs;
   final RxList<leave_model.Data> filteredLeaves = <leave_model.Data>[].obs;
+  final RxBool hasSelectedDate = false.obs;
 
   // Named update IDs for targeted updates
   static const String calendarGridId = 'calendar-grid';
   static const String attendanceDataId = 'attendance-data';
   static const String leaveDataId = 'leave-data';
   static const String monthYearPickerId = 'month-year-picker';
-
   @override
   void onInit() {
     super.onInit();
@@ -129,6 +129,7 @@ class HistoryController extends GetxController {
 
   void selectDate(DateTime date) {
     selectedDate.value = date;
+    hasSelectedDate.value = true; // Add this line
     filterDataBySelectedDate();
     update([calendarGridId, attendanceDataId, leaveDataId]);
   }

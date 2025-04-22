@@ -22,6 +22,5 @@ class BaseUrl {
   static String sickLeaveCount = '$base/leaves/sick-count';
 
   // Calendar endpoints
-  static String calendarDetail = '$base/calendar/detail';
-  static String attendanceCalendar = '$base/attendance/calendar';
+  static String holidays = '$base/holidays';
 }

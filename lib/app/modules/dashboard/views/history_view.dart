@@ -52,17 +52,77 @@ class HistoryView extends GetView<HistoryController> {
                 const SizedBox(height: 16),
                 _buildDateSelection(context),
                 const SizedBox(height: 24),
-                _buildTabs(),
-                const SizedBox(height: 16),
-                Obx(() => controller.selectedTabIndex.value == 0
-                    ? _buildAttendanceHistory()
-                    : _buildLeaveHistory()),
-                // Spacer for bottom padding
-                const SizedBox(height: 24),
+                Obx(() {
+                  if (!controller.hasSelectedDate.value) {
+                    return _buildInitialState(
+                        "Pilih tanggal untuk melihat data kehadiran atau cuti");
+                  }
+
+                  // Show attendance data if available
+                  if (controller.filteredAttendance.isNotEmpty) {
+                    return _buildAttendanceHistory();
+                  }
+
+                  // Show leave data if available
+                  if (controller.filteredLeaves.isNotEmpty) {
+                    return _buildLeaveHistory();
+                  }
+
+                  // No data available for the selected date
+                  return _buildEmptyState(
+                      "Tidak ada data kehadiran atau cuti pada tanggal tersebut");
+                }),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // Add this new method
+  Widget _buildInitialState(String message) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.calendar_today_outlined,
+            color: Colors.grey[400],
+            size: 48,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Pilih Tanggal',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -1016,8 +1076,10 @@ class HistoryView extends GetView<HistoryController> {
   // Empty state widget
   Widget _buildEmptyState(String message) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      padding: const EdgeInsets.all(20),
+      // Increase horizontal margin to expand width
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+      padding: const EdgeInsets.all(24), // Increase padding slightly
+      width: double.infinity, // Make sure it takes full width
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1035,22 +1097,22 @@ class HistoryView extends GetView<HistoryController> {
           Icon(
             Icons.event_busy_rounded,
             color: Colors.grey[400],
-            size: 48,
+            size: 56, // Slightly larger icon
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             'Tidak Ada Data',
             style: GoogleFonts.poppins(
-              fontSize: 16,
+              fontSize: 18, // Slightly larger text
               fontWeight: FontWeight.w600,
               color: Colors.grey[800],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             message,
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 15, // Slightly larger text
               color: Colors.grey[700],
             ),
             textAlign: TextAlign.center,
