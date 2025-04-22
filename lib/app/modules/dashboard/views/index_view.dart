@@ -31,18 +31,20 @@ class IndexView extends GetView<DashboardController> {
   // Extract app bar to dedicated method for cleaner code
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: Obx(() {
-        final name =
-            controller.schedule.value?.data?.employeeName ?? 'Pengguna';
-        return Text(
-          'Selamat Datang, $name',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        );
-      }),
+      title: GetBuilder<DashboardController>(
+        id: 'profile_name', // Using the same ID
+        builder: (controller) {
+          final name = controller.profile.value?.data?.name ?? 'Pengguna';
+          return Text(
+            'Selamat Datang, $name',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
+          );
+        },
+      ),
       backgroundColor: Colors.indigo[600],
       elevation: 0,
       actions: [
@@ -132,54 +134,55 @@ class IndexView extends GetView<DashboardController> {
       ),
       child: Row(
         children: [
-          // Profile Image
-          Obx(() {
-            final profileImageUrl =
-                controller.profile.value?.data?.profilePhoto;
+          // Profile Image - Gunakan GetBuilder untuk memastikan refresh UI
+          GetBuilder<DashboardController>(
+              id: 'profile_photo',
+              builder: (controller) {
+                final profileImageUrl =
+                    controller.profile.value?.data?.profilePhoto;
 
-            return Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: CircleAvatar(
-                radius: 28,
-                backgroundColor: Colors.white,
-                backgroundImage:
-                    profileImageUrl != null && profileImageUrl.isNotEmpty
-                        ? NetworkImage(profileImageUrl)
+                return Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    // Tambahkan parameter cacheWidth: 120 untuk menghindari caching gambar lama
+                    backgroundImage:
+                        profileImageUrl != null && profileImageUrl.isNotEmpty
+                            ? NetworkImage(profileImageUrl +
+                                "?v=${DateTime.now().millisecondsSinceEpoch}")
+                            : null,
+                    child: profileImageUrl == null || profileImageUrl.isEmpty
+                        ? const Icon(
+                            Icons.person,
+                            size: 32,
+                            color: Colors.indigo,
+                          )
                         : null,
-                child: profileImageUrl == null || profileImageUrl.isEmpty
-                    ? const Icon(
-                        Icons.person,
-                        size: 32,
-                        color: Colors.indigo,
-                      )
-                    : null,
-              ),
-            );
-          }),
+                  ),
+                );
+              }),
 
           const SizedBox(width: 15),
 
           // Profile Info
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Obx(() {
+            child: GetBuilder<DashboardController>(
+                id: 'profile_info',
+                builder: (controller) {
                   // Prioritize profile data over schedule data for name
                   final employeeName = controller.profile.value?.data?.name ??
-                      controller.schedule.value?.data?.employeeName ??
                       'Nama Tidak Tersedia';
 
-                  // Modified part: Handle roles as a List<String>?
+                  // Ambil data lain seperti sebelumnya
                   final rolesList = controller.profile.value?.data?.roles;
                   final rolesText = (rolesList != null && rolesList.isNotEmpty)
-                      ? rolesList
-                          .join(', ') // Join with comma if multiple roles
-                      : 'Staff'; // Default value if null or empty
+                      ? rolesList.join(', ')
+                      : 'Staff';
 
                   final shiftData = controller.schedule.value?.data?.shift;
                   final shiftName = shiftData?.name ?? 'Shift Tidak Tersedia';
@@ -235,8 +238,6 @@ class IndexView extends GetView<DashboardController> {
                     ],
                   );
                 }),
-              ],
-            ),
           ),
         ],
       ),

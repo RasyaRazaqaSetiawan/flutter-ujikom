@@ -10,6 +10,7 @@ import 'package:ujikom/app/modules/dashboard/views/history_view.dart';
 import 'package:ujikom/app/modules/dashboard/views/index_view.dart';
 import 'package:ujikom/app/modules/dashboard/views/profile_view.dart';
 import 'package:ujikom/app/utils/api.dart';
+import 'package:ujikom/app/utils/event_bus.dart';
 
 class DashboardController extends GetxController {
   // State Management with Rx
@@ -23,7 +24,7 @@ class DashboardController extends GetxController {
   final get_attendance = Rxn<GetAttendanceResponse>();
   final profile = Rxn<ProfileResponse>(); // Added missing profile variable
   final lastLeaveDate = ''.obs;
-  
+
   // Loading states
   final isLoading = true.obs;
   final isRefreshing = false.obs;
@@ -54,12 +55,19 @@ class DashboardController extends GetxController {
     super.onInit();
     // Fetch initial data using parallel requests
     loadDashboardData();
+    // Listen for profile updates
+    ever(EventBus.profileUpdated, (_) {
+      // Refresh profile when updated
+      fetchProfile();
+      // Update GetBuilder UI components
+      update(['profile_name', 'profile_info', 'profile_photo']);
+    });
   }
 
   // Load all dashboard data in parallel
   Future<void> loadDashboardData() async {
     isLoading.value = true;
-    
+
     try {
       // Get token once for all requests
       final token = await getToken();
@@ -67,7 +75,7 @@ class DashboardController extends GetxController {
         Get.offAllNamed('/login');
         return;
       }
-      
+
       // Run API calls in parallel
       await Future.wait([
         fetchProfile(), // Added missing profile fetch
@@ -81,7 +89,7 @@ class DashboardController extends GetxController {
       isLoading.value = false;
     }
   }
-  
+
   // Refresh all data
   Future<void> refreshData() async {
     isRefreshing.value = true;
@@ -101,7 +109,7 @@ class DashboardController extends GetxController {
       handleError('Gagal memuat data kehadiran', e);
     }
   }
-  
+
   // Fetch leave related data
   Future<void> fetchLeaveData(String token) async {
     try {
@@ -224,6 +232,7 @@ class DashboardController extends GetxController {
 
       if (response.statusCode == 200) {
         profile.value = ProfileResponse.fromJson(response.body);
+        update(['profile_photo', 'profile_name', 'profile_info']);
       } else if (response.statusCode == 401) {
         logout();
       } else {
@@ -273,7 +282,8 @@ class DashboardController extends GetxController {
       } else if (response.statusCode == 401) {
         logout();
       } else {
-        throw Exception("Gagal mengambil data kehadiran: ${response.statusText}");
+        throw Exception(
+            "Gagal mengambil data kehadiran: ${response.statusText}");
       }
     } catch (e) {
       handleError("Gagal memuat data kehadiran", e);
@@ -393,7 +403,8 @@ class DashboardController extends GetxController {
       } else if (response.statusCode == 401) {
         logout();
       } else {
-        throw Exception("Gagal mengambil data cuti sakit: ${response.statusText}");
+        throw Exception(
+            "Gagal mengambil data cuti sakit: ${response.statusText}");
       }
     } catch (e) {
       handleError("Gagal memuat jumlah cuti sakit disetujui", e);
@@ -429,7 +440,7 @@ class DashboardController extends GetxController {
         final message = type == 'in'
             ? 'Absen masuk berhasil dicatat'
             : 'Absen pulang berhasil dicatat';
-        
+
         showSuccessMessage('Berhasil', message);
       } else if (response.statusCode == 401) {
         logout();
@@ -457,7 +468,7 @@ class DashboardController extends GetxController {
 
   // ERROR HANDLING & UI NOTIFICATIONS
   //----------------------------------------
-  
+
   // Display error message
   void handleError(String title, dynamic error) {
     print("$title: $error");
@@ -470,7 +481,7 @@ class DashboardController extends GetxController {
       snackPosition: SnackPosition.BOTTOM,
     );
   }
-  
+
   // Display success message
   void showSuccessMessage(String title, String message) {
     Get.snackbar(

@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:ujikom/app/utils/event_bus.dart';
 
 class ProfileController extends GetxController {
   final box = GetStorage();
@@ -15,7 +16,7 @@ class ProfileController extends GetxController {
 
   // Data profil sebagai observable
   var profile = Rx<ProfileResponse?>(null);
-  
+
   // Status update profile
   var isLoading = false.obs;
   var errorMessage = ''.obs;
@@ -72,16 +73,16 @@ class ProfileController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     successMessage.value = '';
-    
+
     try {
       String? token = await getToken();
-      
+
       if (token == null) {
         errorMessage.value = "Token tidak ditemukan, silakan login ulang.";
         isLoading.value = false;
         return false;
       }
-      
+
       // Siapkan data untuk diupdate
       final Map<String, String> data = {};
       if (name != null) data['name'] = name;
@@ -90,7 +91,9 @@ class ProfileController extends GetxController {
         // Gunakan nilai gender langsung dalam bahasa Indonesia
         // Standarisasi penulisan (jika diperlukan)
         final lowerGender = gender.toLowerCase();
-        if (lowerGender == 'laki-laki' || lowerGender == 'laki laki' || lowerGender == 'laki') {
+        if (lowerGender == 'laki-laki' ||
+            lowerGender == 'laki laki' ||
+            lowerGender == 'laki') {
           data['gender'] = 'Laki-Laki';
         } else if (lowerGender == 'perempuan') {
           data['gender'] = 'Perempuan';
@@ -106,35 +109,40 @@ class ProfileController extends GetxController {
       if (phoneNumber != null) data['phone_number'] = phoneNumber;
       if (address != null) data['address'] = address;
       if (dateOfBirth != null) data['date_of_birth'] = dateOfBirth;
-      
+
       // Debug info
       print('Mengirim data ke server: $data');
-      
+
       final response = await _getConnect.post(
         BaseUrl.updateProfile,
         data,
         headers: {'Authorization': "Bearer $token"},
         contentType: "application/json",
       );
-      
+
       // Debug info
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
-      
+
       if (response.statusCode == 200) {
-        final updateProfileResponse = UpdateProfileResponse.fromJson(response.body);
-        successMessage.value = updateProfileResponse.message ?? "Profil berhasil diperbarui";
+        final updateProfileResponse =
+            UpdateProfileResponse.fromJson(response.body);
+        successMessage.value =
+            updateProfileResponse.message ?? "Profil berhasil diperbarui";
         if (refreshAfterUpdate) {
           await fetchProfile(); // Refresh data profil setelah update
+          EventBus.profileUpdated.toggle(); // Notifies other controllers
         }
         isLoading.value = false;
         return true;
       } else {
         try {
           final errorData = jsonDecode(response.body);
-          errorMessage.value = errorData['message'] ?? "Gagal memperbarui profil";
+          errorMessage.value =
+              errorData['message'] ?? "Gagal memperbarui profil";
         } catch (_) {
-          errorMessage.value = "Gagal memperbarui profil: ${response.statusText}";
+          errorMessage.value =
+              "Gagal memperbarui profil: ${response.statusText}";
         }
         isLoading.value = false;
         return false;
@@ -146,7 +154,7 @@ class ProfileController extends GetxController {
       return false;
     }
   }
-  
+
   // Method untuk update profile dengan foto (cross-platform support)
   Future<bool> updateProfileWithPhoto({
     String? name,
@@ -162,16 +170,16 @@ class ProfileController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     successMessage.value = '';
-    
+
     try {
       String? token = await getToken();
-      
+
       if (token == null) {
         errorMessage.value = "Token tidak ditemukan, silakan login ulang.";
         isLoading.value = false;
         return false;
       }
-      
+
       if (kIsWeb) {
         // Gunakan pendekatan berbasis Web dengan FormData dari GetConnect
         final formData = FormData({
@@ -182,7 +190,7 @@ class ProfileController extends GetxController {
           if (address != null) 'address': address,
           if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
         });
-        
+
         // Tambahkan file foto jika ada
         if (profilePhoto != null) {
           if (profilePhoto is Uint8List) {
@@ -192,7 +200,7 @@ class ProfileController extends GetxController {
               MapEntry(
                 'profile_photo',
                 MultipartFile(
-                  profilePhoto, 
+                  profilePhoto,
                   filename: fileName ?? 'profile_photo.jpg',
                   contentType: mime,
                 ),
@@ -203,18 +211,16 @@ class ProfileController extends GetxController {
             formData.files.add(
               MapEntry(
                 'profile_photo',
-                MultipartFile(
-                  profilePhoto.readAsBytesSync(), 
-                  filename: fileName ?? 'profile_photo.jpg',
-                  contentType: "image/jpeg"
-                ),
+                MultipartFile(profilePhoto.readAsBytesSync(),
+                    filename: fileName ?? 'profile_photo.jpg',
+                    contentType: "image/jpeg"),
               ),
             );
           } else {
             throw Exception("Format foto tidak didukung");
           }
         }
-        
+
         // Kirim request dengan FormData
         final response = await _getConnect.post(
           BaseUrl.updateProfile,
@@ -222,39 +228,42 @@ class ProfileController extends GetxController {
           headers: {'Authorization': "Bearer $token"},
           contentType: "multipart/form-data",
         );
-        
+
         // Proses response
         return _processUpdateResponse(response, refreshAfterUpdate);
       } else {
         // Pendekatan Native dengan http.MultipartRequest
-        var request = http.MultipartRequest('POST', Uri.parse(BaseUrl.updateProfile));
-        
+        var request =
+            http.MultipartRequest('POST', Uri.parse(BaseUrl.updateProfile));
+
         // Tambahkan Authorization header
         request.headers['Authorization'] = "Bearer $token";
-        
+
         // Tambahkan fields
         if (name != null) request.fields['name'] = name;
         if (email != null) request.fields['email'] = email;
-        if (gender != null) request.fields['gender'] = _standardizeGender(gender);
+        if (gender != null)
+          request.fields['gender'] = _standardizeGender(gender);
         if (phoneNumber != null) request.fields['phone_number'] = phoneNumber;
         if (address != null) request.fields['address'] = address;
         if (dateOfBirth != null) request.fields['date_of_birth'] = dateOfBirth;
-        
+
         // Tambahkan file foto profil jika ada
         if (profilePhoto != null && profilePhoto is File) {
-          request.files.add(
-            await http.MultipartFile.fromPath('profile_photo', profilePhoto.path)
-          );
+          request.files.add(await http.MultipartFile.fromPath(
+              'profile_photo', profilePhoto.path));
         }
-        
+
         // Kirim request
         var streamResponse = await request.send();
         var response = await http.Response.fromStream(streamResponse);
-        
+
         // Proses hasil
         if (response.statusCode == 200) {
-          final updateProfileResponse = UpdateProfileResponse.fromJson(jsonDecode(response.body));
-          successMessage.value = updateProfileResponse.message ?? "Profil berhasil diperbarui";
+          final updateProfileResponse =
+              UpdateProfileResponse.fromJson(jsonDecode(response.body));
+          successMessage.value =
+              updateProfileResponse.message ?? "Profil berhasil diperbarui";
           if (refreshAfterUpdate) {
             await fetchProfile(); // Refresh data profil setelah update
           }
@@ -263,9 +272,11 @@ class ProfileController extends GetxController {
         } else {
           try {
             final errorData = jsonDecode(response.body);
-            errorMessage.value = errorData['message'] ?? "Gagal memperbarui profil";
+            errorMessage.value =
+                errorData['message'] ?? "Gagal memperbarui profil";
           } catch (_) {
-            errorMessage.value = "Gagal memperbarui profil: ${response.reasonPhrase}";
+            errorMessage.value =
+                "Gagal memperbarui profil: ${response.reasonPhrase}";
           }
           isLoading.value = false;
           return false;
@@ -278,24 +289,29 @@ class ProfileController extends GetxController {
       return false;
     }
   }
-  
+
   // Helper method untuk memproses respons update profile dari GetConnect
-  Future<bool> _processUpdateResponse(Response response, bool refreshAfterUpdate) async {
+  Future<bool> _processUpdateResponse(
+      Response response, bool refreshAfterUpdate) async {
     // Debug info
     print('Response status: ${response.statusCode}');
     print('Response body: ${response.body}');
-    
+
     if (response.statusCode == 200) {
-      final updateProfileResponse = UpdateProfileResponse.fromJson(response.body);
-      successMessage.value = updateProfileResponse.message ?? "Profil berhasil diperbarui";
+      final updateProfileResponse =
+          UpdateProfileResponse.fromJson(response.body);
+      successMessage.value =
+          updateProfileResponse.message ?? "Profil berhasil diperbarui";
       if (refreshAfterUpdate) {
         await fetchProfile(); // Refresh data profil setelah update
+        EventBus.profileUpdated.toggle(); // Mengubah nilai untuk memicu event
       }
       isLoading.value = false;
       return true;
     } else {
       try {
-        final errorData = response.body is String ? jsonDecode(response.body) : response.body;
+        final errorData =
+            response.body is String ? jsonDecode(response.body) : response.body;
         errorMessage.value = errorData['message'] ?? "Gagal memperbarui profil";
       } catch (_) {
         errorMessage.value = "Gagal memperbarui profil: ${response.statusText}";
@@ -304,11 +320,14 @@ class ProfileController extends GetxController {
       return false;
     }
   }
-  
+
   // Helper method untuk standarisasi gender
   String _standardizeGender(String gender) {
     final lowerGender = gender.toLowerCase();
-    if (lowerGender == 'laki-laki' || lowerGender == 'laki laki' || lowerGender == 'laki' || lowerGender == 'male') {
+    if (lowerGender == 'laki-laki' ||
+        lowerGender == 'laki laki' ||
+        lowerGender == 'laki' ||
+        lowerGender == 'male') {
       return 'Laki-Laki';
     } else if (lowerGender == 'perempuan' || lowerGender == 'female') {
       return 'Perempuan';
@@ -322,7 +341,7 @@ class ProfileController extends GetxController {
     box.erase(); // Hapus semua data sesi
     Get.offAllNamed('/login');
   }
-  
+
   @override
   void onInit() {
     super.onInit();

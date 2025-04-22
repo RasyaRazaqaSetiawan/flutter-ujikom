@@ -254,6 +254,33 @@ class HistoryView extends GetView<HistoryController> {
                   final isCurrentMonth = ctrl.isInCurrentMonth(date);
                   final isToday = ctrl.isSameDay(date, DateTime.now());
 
+                  // Mendapatkan status warna untuk tanggal ini
+                  final statusColor = isCurrentMonth
+                      ? ctrl.getStatusColorForDate(date)
+                      : Colors.transparent;
+
+                  // Tentukan warna background berdasarkan status dan prioritas tampilan
+                  Color backgroundColor;
+                  if (isSelected) {
+                    backgroundColor = Colors.indigo[600]!;
+                  } else if (statusColor != Colors.transparent) {
+                    backgroundColor = statusColor;
+                  } else {
+                    backgroundColor = Colors.transparent;
+                  }
+
+                  // Tentukan warna teks berdasarkan background
+                  Color textColor;
+                  if (isSelected || statusColor != Colors.transparent) {
+                    textColor = Colors.white;
+                  } else if (!isCurrentMonth) {
+                    textColor = Colors.grey[400]!;
+                  } else if (isToday) {
+                    textColor = Colors.indigo;
+                  } else {
+                    textColor = Colors.grey[800]!;
+                  }
+
                   return Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -265,37 +292,33 @@ class HistoryView extends GetView<HistoryController> {
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? Colors.indigo[600]
-                              : Colors.transparent,
+                          color: backgroundColor,
                           shape: BoxShape.circle,
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.indigo.withOpacity(0.4),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  )
-                                ]
-                              : null,
+                          boxShadow:
+                              isSelected || statusColor != Colors.transparent
+                                  ? [
+                                      BoxShadow(
+                                        color: (isSelected
+                                                ? Colors.indigo
+                                                : statusColor)
+                                            .withOpacity(0.4),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      )
+                                    ]
+                                  : null,
                         ),
                         child: Center(
                           child: Text(
                             date.day.toString(),
                             style: GoogleFonts.poppins(
                               fontSize: 13,
-                              fontWeight: isSelected
+                              fontWeight: (isSelected ||
+                                      isToday ||
+                                      statusColor != Colors.transparent)
                                   ? FontWeight.w600
-                                  : isToday
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                              color: isSelected
-                                  ? Colors.white
-                                  : isCurrentMonth
-                                      ? isToday
-                                          ? Colors.indigo
-                                          : Colors.grey[800]
-                                      : Colors.grey[400],
+                                  : FontWeight.w500,
+                              color: textColor,
                             ),
                           ),
                         ),
@@ -310,6 +333,46 @@ class HistoryView extends GetView<HistoryController> {
           const SizedBox(height: 16),
         ],
       ),
+    );
+  }
+
+  // Tambahkan widget ini di bawah kalender dalam _buildDateSelection
+  Widget _buildColorLegend() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildLegendItem('Tepat Waktu', Colors.green),
+          const SizedBox(width: 16),
+          _buildLegendItem('Terlambat', Colors.orange),
+          const SizedBox(width: 16),
+          _buildLegendItem('Cuti', Colors.blue),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
     );
   }
 
